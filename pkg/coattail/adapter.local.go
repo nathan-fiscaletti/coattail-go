@@ -38,7 +38,7 @@ func (i *localPeerAdapter) runUnit(arg runUnitArguments) (interface{}, error) {
 		return nil, err
 	}
 
-	return h.Unit(arg.Args)
+	return h.Execute(arg.Args)
 }
 
 /* ====== Actions ====== */

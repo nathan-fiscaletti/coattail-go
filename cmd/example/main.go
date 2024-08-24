@@ -7,9 +7,9 @@ import (
 func main() {
 	ct := coattail.Manage()
 
-	err := ct.AddAction("test", func(args interface{}) (interface{}, error) {
+	err := ct.AddAction("test", coattail.NewUnit(func(args interface{}) (interface{}, error) {
 		return args, nil
-	})
+	}))
 	if err != nil {
 		panic(err)
 	}
