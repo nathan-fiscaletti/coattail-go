@@ -4,6 +4,11 @@
 ## Architecture
 ![Architecture](./arch.png)
 
+## Me trying to explain what the hell this is
+
+Maybe it's a PuSub style remote execution and communication mechanism for a distributed system built on a peer-to-peer architecture.
+Could be practical implemented as a communication mechanism for microservices as a competitor to gRPC or REST.
+
 ### Actions & Receivers
 
 Actions and receivers are small blocks of code that you integrate in your Coattail instance. They are the building blocks of the Coattail system.
