@@ -4,10 +4,9 @@
 ## Architecture
 ![Architecture](./arch.png)
 
-## Me trying to explain what the hell this is
+## What is Coattail?
 
-Maybe it's a PuSub style remote execution and communication mechanism for a distributed system built on a peer-to-peer architecture.
-Could be practical implemented as a communication mechanism for microservices as a competitor to gRPC or REST.
+It's a peer-to-peer communication protocol designed for microservices within distributed systems. It allows services to directly communicate with each other as peers, similar to gRPC but more streamlined and P2P-focused.
 
 ### Actions & Receivers
 
