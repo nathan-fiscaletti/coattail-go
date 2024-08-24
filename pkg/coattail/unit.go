@@ -2,18 +2,18 @@ package coattail
 
 type Unit func(interface{}) (interface{}, error)
 
-type UnitType int
+type unitType int
 
 const (
-	unitTypeAction UnitType = iota
+	unitTypeAction unitType = iota
 	unitTypeReceiver
 )
 
-type AnyUnit struct {
+type anyUnit struct {
 	Unit
 
 	name     string
-	unitType UnitType
+	unitType unitType
 }
 
 type Action struct {

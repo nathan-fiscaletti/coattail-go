@@ -2,10 +2,6 @@ package coattail
 
 import "fmt"
 
-type PeerDetails struct {
-	ID string `json:"id"`
-}
-
 /* ====== Type ====== */
 
 type remotePeerAdapter struct {
