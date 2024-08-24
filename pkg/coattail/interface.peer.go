@@ -20,16 +20,25 @@ type PeerManager interface {
 	Peers() ([]*Peer, error)
 }
 
+// PeerAdapter is a unified interface for both local and remote peers.
 type PeerAdapter interface {
 	ActionManager
 	ReceiverManager
 	PeerManager
 }
 
+const (
+	LocalPeerId string = "local"
+)
+
 type PeerDetails struct {
+	// The ID of the peer. This is a unique identifier for the peer. For the
+	// local peer, this should contain coattail.LocalPeerId. For remote peers,
+	// this is the ID that was assigned to the peer when it was registered.
 	PeerID string `json:"id"`
 }
 
+// Peer represents any coattail peer, whether local or remote.
 type Peer struct {
 	PeerDetails
 	PeerAdapter

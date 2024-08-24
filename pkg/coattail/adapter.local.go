@@ -137,6 +137,8 @@ func (i *localPeerAdapter) AddReceiver(name string, unit Unit) error {
 	return nil
 }
 
+/* ====== Peers ====== */
+
 func (i *localPeerAdapter) GetPeer(id string) (*Peer, error) {
 	for _, peerDetails := range i.peers {
 		if peerDetails.PeerID == id {

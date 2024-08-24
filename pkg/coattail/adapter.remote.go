@@ -51,6 +51,8 @@ func (i *remotePeerAdapter) AddReceiver(name string, unit Unit) error {
 	return fmt.Errorf("cannot add receiver to remote peer")
 }
 
+/* ====== Peers ====== */
+
 func (i *remotePeerAdapter) GetPeer(id string) (*Peer, error) {
 	return nil, nil
 }

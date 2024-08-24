@@ -8,7 +8,7 @@ func Manage() *Peer {
 	if local == nil {
 		local = newPeer(
 			PeerDetails{
-				PeerID: "local",
+				PeerID: LocalPeerId,
 			},
 			&localPeerAdapter{
 				units: []anyUnit{},
