@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/gob"
 	"fmt"
 	"io"
 	"net"
@@ -64,13 +63,10 @@ func (c *Communicator) WritePacket(packet PacketData) error {
 func (c *Communicator) startOutput() {
 	defer c.wg.Done()
 
-	encoder := gob.NewEncoder(c.conn)
+	encoder := newPacketEncoder(c.conn)
 
 	for packetHandler := range c.output {
-		err := encoder.Encode(packet{
-			Type: packetHandler.packet.Type(),
-			Data: packetHandler.packet,
-		})
+		err := encoder.EncodePacket(packetHandler.packet)
 		if err != nil {
 			packetHandler.errChan <- err
 			continue
@@ -86,11 +82,11 @@ func (c *Communicator) startInput() {
 	// Set the initial read deadline to 10 seconds
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-	decoder := gob.NewDecoder(c.conn)
+	decoder := newPacketDecoder(c.conn)
 
 	for {
 		// Read and decode the incoming ProtocolPacket
-		packet, err := nextPacket(decoder)
+		packet, err := decoder.NextPacket()
 
 		// Handle timeout error or EOF
 		if err != nil {
