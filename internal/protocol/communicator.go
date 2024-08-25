@@ -9,7 +9,7 @@ import (
 )
 
 type packetWithErrHandler struct {
-	packet  PacketData
+	packet  Packet
 	errChan chan error
 }
 
@@ -45,7 +45,7 @@ func (c *Communicator) IsFinished() bool {
 	return c.finished
 }
 
-func (c *Communicator) WritePacket(packet PacketData) error {
+func (c *Communicator) WritePacket(packet Packet) error {
 	errChan := make(chan error)
 	c.output <- packetWithErrHandler{
 		packet:  packet,
@@ -65,7 +65,12 @@ func (c *Communicator) startOutput() {
 
 	encoder := newPacketEncoder(c.conn)
 
-	for packetHandler := range c.output {
+	for {
+		packetHandler, ok := <-c.output
+		if !ok {
+			break
+		}
+
 		err := encoder.EncodePacket(packetHandler.packet)
 		if err != nil {
 			packetHandler.errChan <- err
@@ -78,6 +83,7 @@ func (c *Communicator) startOutput() {
 
 func (c *Communicator) startInput() {
 	defer c.wg.Done()
+	defer close(c.output)
 
 	// Set the initial read deadline to 10 seconds
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))

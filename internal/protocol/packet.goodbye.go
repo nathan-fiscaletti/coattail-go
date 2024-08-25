@@ -6,22 +6,22 @@ import (
 )
 
 const (
-	PacketTypeGoodbye OperationType = 2
+	PacketTypeGoodbye PacketType = 2
 )
 
 func init() {
-	gob.Register(GoodbyePacketData{})
+	gob.Register(GoodbyePacket{})
 }
 
-type GoodbyePacketData struct {
+type GoodbyePacket struct {
 	Message string
 }
 
-func (g GoodbyePacketData) Type() OperationType {
+func (g GoodbyePacket) Type() PacketType {
 	return PacketTypeGoodbye
 }
 
-func (g GoodbyePacketData) Execute(communicator *Communicator) error {
+func (g GoodbyePacket) Execute(communicator *Communicator) error {
 	fmt.Printf("%s\n", g.Message)
 	return nil
 }

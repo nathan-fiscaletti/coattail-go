@@ -6,24 +6,24 @@ import (
 )
 
 const (
-	PacketTypeHello OperationType = 1
+	PacketTypeHello PacketType = 1
 )
 
 func init() {
-	gob.Register(HelloPacketData{})
+	gob.Register(HelloPacket{})
 }
 
-type HelloPacketData struct {
+type HelloPacket struct {
 	Message string
 }
 
-func (h HelloPacketData) Type() OperationType {
+func (h HelloPacket) Type() PacketType {
 	return PacketTypeHello
 }
 
-func (h HelloPacketData) Execute(communicator *Communicator) error {
+func (h HelloPacket) Execute(communicator *Communicator) error {
 	fmt.Printf("%s\n", h.Message)
-	return communicator.WritePacket(GoodbyePacketData{
+	return communicator.WritePacket(GoodbyePacket{
 		Message: "Goodbye, I am the second functional packet!",
 	})
 }

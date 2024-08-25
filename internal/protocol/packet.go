@@ -1,13 +1,8 @@
 package protocol
 
-type OperationType int
+type PacketType int
 
-type PacketData interface {
+type Packet interface {
 	Execute(communicator *Communicator) error
-	Type() OperationType
-}
-
-type packet struct {
-	Type OperationType
-	Data interface{}
+	Type() PacketType
 }

@@ -23,7 +23,7 @@ func (i *remotePeerAdapter) RunCommunicationTest() error {
 		return err
 	}
 
-	err = comm.WritePacket(protocol.HelloPacketData{
+	err = comm.WritePacket(protocol.HelloPacket{
 		Message: "Hello, I am the first functional packet!",
 	})
 	if err != nil {

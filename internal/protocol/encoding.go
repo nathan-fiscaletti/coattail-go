@@ -5,6 +5,11 @@ import (
 	"io"
 )
 
+type packet struct {
+	Type PacketType
+	Data interface{}
+}
+
 type packetEncoder struct {
 	*gob.Encoder
 }
@@ -15,7 +20,7 @@ func newPacketEncoder(w io.Writer) *packetEncoder {
 	}
 }
 
-func (e *packetEncoder) EncodePacket(p PacketData) error {
+func (e *packetEncoder) EncodePacket(p Packet) error {
 	return e.Encode(packet{
 		Type: p.Type(),
 		Data: p,
@@ -32,12 +37,12 @@ func newPacketDecoder(r io.Reader) *packetDecoder {
 	}
 }
 
-func (d *packetDecoder) NextPacket() (PacketData, error) {
+func (d *packetDecoder) NextPacket() (Packet, error) {
 	var p packet
 	err := d.Decode(&p)
 	if err != nil {
 		return nil, err
 	}
 
-	return p.Data.(PacketData), nil
+	return p.Data.(Packet), nil
 }
