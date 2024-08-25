@@ -1,6 +1,8 @@
 package protocol
 
-import "net"
+import (
+	"net"
+)
 
 type Host struct {
 	host net.Listener

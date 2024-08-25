@@ -7,12 +7,10 @@ import (
 	"net"
 	"sync"
 	"time"
-
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
 )
 
-type packetHandler struct {
-	packet  packets.Packet
+type packetResponseHandler struct {
+	packet  PacketData
 	errChan chan error
 }
 
@@ -20,7 +18,7 @@ type Communicator struct {
 	conn net.Conn
 
 	wg     sync.WaitGroup
-	output chan packetHandler
+	output chan packetResponseHandler
 
 	finished bool
 }
@@ -28,7 +26,7 @@ type Communicator struct {
 func NewCommunicator(conn net.Conn) *Communicator {
 	return &Communicator{
 		conn:   conn,
-		output: make(chan packetHandler, 100),
+		output: make(chan packetResponseHandler, 100),
 	}
 }
 
@@ -48,9 +46,9 @@ func (c *Communicator) IsFinished() bool {
 	return c.finished
 }
 
-func (c *Communicator) WritePacket(packet packets.Packet) error {
+func (c *Communicator) WritePacket(packet PacketData) error {
 	errChan := make(chan error)
-	c.output <- packetHandler{
+	c.output <- packetResponseHandler{
 		packet:  packet,
 		errChan: errChan,
 	}
@@ -68,14 +66,17 @@ func (c *Communicator) startOutput() {
 
 	encoder := gob.NewEncoder(c.conn)
 
-	for packet := range c.output {
-		err := encoder.Encode(packet.packet)
+	for packetHandler := range c.output {
+		err := encoder.Encode(packet{
+			Type: packetHandler.packet.Type(),
+			Data: packetHandler.packet,
+		})
 		if err != nil {
-			packet.errChan <- err
+			packetHandler.errChan <- err
 			continue
 		}
 
-		packet.errChan <- nil
+		packetHandler.errChan <- nil
 	}
 }
 
@@ -89,8 +90,7 @@ func (c *Communicator) startInput() {
 
 	for {
 		// Read and decode the incoming ProtocolPacket
-		var packet packets.Packet
-		err := decoder.Decode(&packet)
+		packet, err := nextPacket(decoder)
 
 		// Handle timeout error or EOF
 		if err != nil {
@@ -103,37 +103,19 @@ func (c *Communicator) startInput() {
 				return
 			}
 
-			// If we faild to decode a packet, try again with the next packet
+			// If we failed to decode a packet, try again with the next packet
 			continue
-		}
-
-		// TODO: Consider changing the protocol to function by starting a new
-		// TODO: goroutine for each packet received to avoid blocking the connection
-		// TODO: but consider that this will not allow for packets that require
-		// TODO: a specific order to be processed in the correct order.
-
-		// Process the ProtocolPacket based on the ProtocolOperation
-		switch packet.Type {
-		case packets.PacketTypeHello:
-			// Handle the RunAction operation
-			helloPacket := packet.Data.(packets.HelloPacketData)
-			fmt.Printf("Received hello packet from %s\n", helloPacket.Message)
-
-			err := c.WritePacket(packets.NewGoodbyePacket(packets.GoodbyePacketData{
-				Message: "Goodbye, I am the second functional packet!",
-			}))
-			if err != nil {
-				fmt.Printf("Error sending hello packet: %s\n", err)
-			}
-		case packets.PacketTypeGoodbye:
-			goodByePacket := packet.Data.(packets.GoodbyePacketData)
-			fmt.Printf("Received goodbye packet from %s\n", goodByePacket.Message)
-		default:
-			// Handle other operations or log unknown operations
-			// ...
 		}
 
 		// Reset the deadline after successful read & process
 		c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+
+		// Process the ProtocolPacket based on the ProtocolOperation
+		go func() {
+			err := packet.Execute(c)
+			if err != nil {
+				fmt.Printf("Error executing packet: %s\n", err)
+			}
+		}()
 	}
 }

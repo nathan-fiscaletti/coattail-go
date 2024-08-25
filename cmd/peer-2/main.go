@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattail"
 )
 
@@ -22,5 +20,5 @@ func main() {
 	}
 
 	// Keep the program running
-	time.Sleep(20 * time.Minute)
+	select {}
 }
