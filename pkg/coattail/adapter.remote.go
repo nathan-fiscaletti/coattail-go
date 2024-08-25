@@ -1,11 +1,19 @@
 package coattail
 
-import "fmt"
+import (
+	"fmt"
+	"net"
+
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol"
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
+)
 
 /* ====== Type ====== */
 
 type remotePeerAdapter struct {
 	details PeerDetails
+
+	comm *protocol.Communicator
 }
 
 func newRemotePeerAdapter(details PeerDetails) *remotePeerAdapter {
@@ -14,9 +22,35 @@ func newRemotePeerAdapter(details PeerDetails) *remotePeerAdapter {
 	}
 }
 
+func (i *remotePeerAdapter) getComm() (*protocol.Communicator, error) {
+	if i.comm == nil || i.comm.IsFinished() {
+		conn, err := net.Dial("tcp", i.details.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		i.comm = protocol.NewCommunicator(conn)
+		i.comm.Start()
+	}
+
+	return i.comm, nil
+}
+
 /* ====== Actions ====== */
 
 func (i *remotePeerAdapter) RunAction(name string, arg interface{}) (interface{}, error) {
+	comm, err := i.getComm()
+	if err != nil {
+		return nil, err
+	}
+
+	err = comm.WritePacket(packets.NewHelloPacket(packets.HelloPacketData{
+		Message: "Hello, I am the first functional packet!",
+	}))
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 

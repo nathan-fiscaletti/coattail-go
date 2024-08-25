@@ -36,6 +36,14 @@ type PeerDetails struct {
 	// local peer, this should contain coattail.LocalPeerId. For remote peers,
 	// this is the ID that was assigned to the peer when it was registered.
 	PeerID string `json:"id"`
+
+	// The address of the peer. This is the address that the peer can be reached
+	// at. For the local peer, this should be the address of the local machine.
+	Address string `json:"address"`
+
+	// The token of the peer. This is a secret token that is used to authenticate
+	// the peer. For the local peer, this should be an empty string.
+	Token string `json:"token"`
 }
 
 // Peer represents any coattail peer, whether local or remote.
