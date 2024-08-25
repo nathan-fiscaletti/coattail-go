@@ -11,6 +11,7 @@ import (
 
 var local *Peer
 
+// Local returns the local peer.
 func Local() *Peer {
 	if local == nil {
 		local = initializeLocalPeer()
@@ -19,13 +20,9 @@ func Local() *Peer {
 	return local
 }
 
+// Run starts the local peer. This function will block.
 func Run() error {
 	return Local().PeerAdapter.(*localPeerAdapter).host.Start()
-}
-
-// NewRemote creates a new remote peer.
-func NewRemote(details PeerDetails) *Peer {
-	return newPeer(details, &remotePeerAdapter{details, nil})
 }
 
 func initializeLocalPeer() *Peer {
