@@ -16,13 +16,31 @@ type remotePeerAdapter struct {
 	comm *protocol.Communicator
 }
 
+// RunCommunicationTest runs a communication test with the remote peer.
+// This is a temporary development function and will be removed in the future.
+func (i *remotePeerAdapter) RunCommunicationTest() error {
+	comm, err := i.communicator()
+	if err != nil {
+		return err
+	}
+
+	err = comm.WritePacket(packets.NewHelloPacket(packets.HelloPacketData{
+		Message: "Hello, I am the first functional packet!",
+	}))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func newRemotePeerAdapter(details PeerDetails) *remotePeerAdapter {
 	return &remotePeerAdapter{
 		details: details,
 	}
 }
 
-func (i *remotePeerAdapter) getComm() (*protocol.Communicator, error) {
+func (i *remotePeerAdapter) communicator() (*protocol.Communicator, error) {
 	if i.comm == nil || i.comm.IsFinished() {
 		conn, err := net.Dial("tcp", i.details.Address)
 		if err != nil {
@@ -39,18 +57,6 @@ func (i *remotePeerAdapter) getComm() (*protocol.Communicator, error) {
 /* ====== Actions ====== */
 
 func (i *remotePeerAdapter) RunAction(name string, arg interface{}) (interface{}, error) {
-	comm, err := i.getComm()
-	if err != nil {
-		return nil, err
-	}
-
-	err = comm.WritePacket(packets.NewHelloPacket(packets.HelloPacketData{
-		Message: "Hello, I am the first functional packet!",
-	}))
-	if err != nil {
-		return nil, err
-	}
-
 	return nil, nil
 }
 

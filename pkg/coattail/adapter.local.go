@@ -15,6 +15,10 @@ type localPeerAdapter struct {
 	peers []PeerDetails
 }
 
+func (i *localPeerAdapter) RunCommunicationTest() error {
+	return nil
+}
+
 /* ====== Units ====== */
 
 func (i *localPeerAdapter) getUnit(hType unitType, name string) (anyUnit, error) {

@@ -18,6 +18,10 @@ type PeerManager interface {
 	GetPeer(id string) (*Peer, error)
 	HasPeer(id string) (bool, error)
 	Peers() ([]*Peer, error)
+
+	// RunCommunicationTest runs a communication test with the remote peer.
+	// This is a temporary development function and will be removed in the future.
+	RunCommunicationTest() error
 }
 
 // PeerAdapter is a unified interface for both local and remote peers.
