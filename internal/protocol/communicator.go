@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type packetResponseHandler struct {
+type packetWithErrHandler struct {
 	packet  PacketData
 	errChan chan error
 }
@@ -17,7 +17,7 @@ type Communicator struct {
 	conn net.Conn
 
 	wg     sync.WaitGroup
-	output chan packetResponseHandler
+	output chan packetWithErrHandler
 
 	finished bool
 }
@@ -25,7 +25,7 @@ type Communicator struct {
 func NewCommunicator(conn net.Conn) *Communicator {
 	return &Communicator{
 		conn:   conn,
-		output: make(chan packetResponseHandler, 100),
+		output: make(chan packetWithErrHandler, 100),
 	}
 }
 
@@ -47,7 +47,7 @@ func (c *Communicator) IsFinished() bool {
 
 func (c *Communicator) WritePacket(packet PacketData) error {
 	errChan := make(chan error)
-	c.output <- packetResponseHandler{
+	c.output <- packetWithErrHandler{
 		packet:  packet,
 		errChan: errChan,
 	}
