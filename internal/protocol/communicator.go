@@ -6,18 +6,29 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
 )
 
-type packetWithErrHandler struct {
-	packet  Packet
-	errChan chan error
+var responseHandlers = sync.Map{}
+
+type outputOperation struct {
+	callerId uint64
+	packet   packets.Packet
+	idChan   chan uint64
+	errChan  chan error
+	respChan chan interface{}
+}
+
+type CommunicatorConfiguration struct {
+	AskTimeout time.Duration
 }
 
 type Communicator struct {
 	conn net.Conn
 
 	wg     sync.WaitGroup
-	output chan packetWithErrHandler
+	output chan outputOperation
 
 	finished bool
 }
@@ -25,7 +36,7 @@ type Communicator struct {
 func NewCommunicator(conn net.Conn) *Communicator {
 	return &Communicator{
 		conn:   conn,
-		output: make(chan packetWithErrHandler, 100),
+		output: make(chan outputOperation, 100),
 	}
 }
 
@@ -45,11 +56,87 @@ func (c *Communicator) IsFinished() bool {
 	return c.finished
 }
 
-func (c *Communicator) WritePacket(packet Packet) error {
+// Say sends a packet to the remote peer and returns an error if the packet
+// could not be sent. If the remote peer response with a packet, it will be
+// automatically handled.
+func (c *Communicator) Say(packet packets.Packet) error {
 	errChan := make(chan error)
-	c.output <- packetWithErrHandler{
-		packet:  packet,
-		errChan: errChan,
+
+	c.output <- outputOperation{
+		callerId: 0,
+		packet:   packet,
+		errChan:  errChan,
+	}
+
+	err := <-errChan
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type Question struct {
+	// Packet to send to the remote peer
+	Packet packets.Packet
+	// ResponseTimeout is the amount of time to wait for a response from the
+	// remote peer. If the response is not received within this time, an error
+	// will be returned. Defaults to 10 seconds.
+	ResponseTimeout time.Duration
+}
+
+// Ask sends a packet to the remote peer and waits for a response. Returns the
+// response packet and an error if the packet could not be sent or if the
+// response could not be received. The response packet will not be automatically
+// handled. You must call the Handle method on the response packet to handle it.
+func (c *Communicator) Ask(question Question) (packets.Packet, error) {
+	errChan := make(chan error)
+	respChan := make(chan interface{})
+	idChan := make(chan uint64)
+
+	c.output <- outputOperation{
+		callerId: 0,
+		packet:   question.Packet,
+		errChan:  errChan,
+		idChan:   idChan,
+		respChan: respChan,
+	}
+
+	err := <-errChan
+	if err != nil {
+		return nil, err
+	}
+
+	id := <-idChan
+
+	if question.ResponseTimeout == 0 {
+		question.ResponseTimeout = 10 * time.Second
+	}
+
+	select {
+	case <-time.After(question.ResponseTimeout):
+		responseHandlers.Delete(id)
+		return nil, fmt.Errorf("timeout waiting for response")
+	case resp := <-respChan:
+		return resp.(packets.Packet), nil
+	}
+}
+
+type response struct {
+	CallerID uint64
+	Packet   packets.Packet
+}
+
+// respond sends a packet to the remote peer in response to a packet that was
+// received from the remote peer. Returns an error if the packet could not be
+// sent.
+func (c *Communicator) respond(resp response) error {
+	errChan := make(chan error)
+
+	c.output <- outputOperation{
+		callerId: resp.CallerID,
+		packet:   resp.Packet,
+		errChan:  errChan,
 	}
 
 	err := <-errChan
@@ -71,13 +158,21 @@ func (c *Communicator) startOutput() {
 			break
 		}
 
-		err := encoder.EncodePacket(packetHandler.packet)
+		id, err := encoder.EncodePacket(packetHandler.callerId, packetHandler.packet)
 		if err != nil {
 			packetHandler.errChan <- err
 			continue
 		}
 
+		if packetHandler.respChan != nil {
+			responseHandlers.Store(id, packetHandler.respChan)
+		}
+
 		packetHandler.errChan <- nil
+
+		if packetHandler.idChan != nil {
+			packetHandler.idChan <- id
+		}
 	}
 }
 
@@ -114,9 +209,27 @@ func (c *Communicator) startInput() {
 
 		// Process the ProtocolPacket based on the ProtocolOperation
 		go func() {
-			err := packet.Execute(c)
+			if packet.RespondingTo != 0 {
+				if respChan, ok := responseHandlers.Load(packet.RespondingTo); ok {
+					respChan.(chan interface{}) <- packet.Data
+					responseHandlers.Delete(packet.RespondingTo)
+					return
+				}
+			}
+
+			resp, err := packet.Data.(packets.Packet).Handle()
 			if err != nil {
 				fmt.Printf("Error executing packet: %s\n", err)
+			}
+
+			if resp != nil {
+				err = c.respond(response{
+					CallerID: packet.ID,
+					Packet:   resp,
+				})
+				if err != nil {
+					fmt.Printf("Error writing response packet: %s\n", err)
+				}
 			}
 		}()
 	}

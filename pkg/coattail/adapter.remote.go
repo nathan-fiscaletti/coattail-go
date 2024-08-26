@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/protocol"
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
 )
 
 /* ====== Type ====== */
@@ -23,12 +24,17 @@ func (i *remotePeerAdapter) RunCommunicationTest() error {
 		return err
 	}
 
-	err = comm.WritePacket(protocol.HelloPacket{
-		Message: "Hello, I am the first functional packet!",
+	resp, err := comm.Ask(protocol.Question{
+		Packet: packets.HelloPacket{
+			Message: "Hello, I am the first functional packet!",
+		},
 	})
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("response: %v\n", resp)
+	resp.Handle()
 
 	return nil
 }

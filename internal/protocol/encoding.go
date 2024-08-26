@@ -3,11 +3,21 @@ package protocol
 import (
 	"encoding/gob"
 	"io"
+	"sync/atomic"
+
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
 )
 
-type packet struct {
-	Type PacketType
-	Data interface{}
+var packetId uint64
+
+func nextPacketId() uint64 {
+	return atomic.AddUint64(&packetId, 1)
+}
+
+type encodedPacket struct {
+	ID           uint64
+	RespondingTo uint64
+	Data         interface{}
 }
 
 type packetEncoder struct {
@@ -20,10 +30,12 @@ func newPacketEncoder(w io.Writer) *packetEncoder {
 	}
 }
 
-func (e *packetEncoder) EncodePacket(p Packet) error {
-	return e.Encode(packet{
-		Type: p.Type(),
-		Data: p,
+func (e *packetEncoder) EncodePacket(callerId uint64, p packets.Packet) (uint64, error) {
+	packetId := nextPacketId()
+	return packetId, e.Encode(encodedPacket{
+		ID:           packetId,
+		RespondingTo: callerId,
+		Data:         p,
 	})
 }
 
@@ -37,12 +49,12 @@ func newPacketDecoder(r io.Reader) *packetDecoder {
 	}
 }
 
-func (d *packetDecoder) NextPacket() (Packet, error) {
-	var p packet
+func (d *packetDecoder) NextPacket() (encodedPacket, error) {
+	var p encodedPacket
 	err := d.Decode(&p)
 	if err != nil {
-		return nil, err
+		return encodedPacket{}, err
 	}
 
-	return p.Data.(Packet), nil
+	return p, nil
 }
