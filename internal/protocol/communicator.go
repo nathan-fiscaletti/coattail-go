@@ -16,7 +16,7 @@ import (
 type Communicator struct {
 	ctx      context.Context
 	conn     net.Conn
-	codec    *encoding.Codec
+	codec    *encoding.StreamCodec
 	wg       sync.WaitGroup
 	output   chan outputOperation
 	finished bool
@@ -29,7 +29,7 @@ func NewCommunicator(ctx context.Context, conn net.Conn) *Communicator {
 	return &Communicator{
 		ctx:    ctx,
 		conn:   conn,
-		codec:  encoding.NewCodec(conn),
+		codec:  encoding.NewStreamCodec(conn),
 		output: make(chan outputOperation, 100),
 	}
 }

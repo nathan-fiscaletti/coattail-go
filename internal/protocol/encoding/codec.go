@@ -1,7 +1,9 @@
 package encoding
 
 import (
+	"encoding/gob"
 	"io"
+	"sync/atomic"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
 )
@@ -12,28 +14,52 @@ type EncodedPacket struct {
 	Data         interface{}
 }
 
-type Codec struct {
-	packetIdentifier
-
-	encoder *packetEncoder
-	decoder *packetDecoder
+type StreamCodec struct {
+	id      atomicId
+	encoder *gob.Encoder
+	decoder *gob.Decoder
 }
 
-func NewCodec(rw io.ReadWriter) *Codec {
-	res := Codec{
-		packetIdentifier: newPacketIdentifier(new(uint64)),
+func NewStreamCodec(rw io.ReadWriter) *StreamCodec {
+	return &StreamCodec{
+		id:      newAtomicId(new(uint64)),
+		encoder: gob.NewEncoder(rw),
+		decoder: gob.NewDecoder(rw),
+	}
+}
+
+func (e StreamCodec) Read() (EncodedPacket, error) {
+	var p EncodedPacket
+	err := e.decoder.Decode(&p)
+	if err != nil {
+		return EncodedPacket{}, err
 	}
 
-	res.encoder = newPacketEncoder(res.packetIdentifier, rw)
-	res.decoder = newPacketDecoder(rw)
-
-	return &res
+	return p, nil
 }
 
-func (e Codec) Read() (EncodedPacket, error) {
-	return e.decoder.nextPacket()
+func (e StreamCodec) Write(callerId uint64, p packets.Packet) (uint64, error) {
+	packetId := e.id.next()
+	err := e.encoder.Encode(EncodedPacket{
+		ID:           packetId,
+		RespondingTo: callerId,
+		Data:         p,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return packetId, nil
 }
 
-func (e Codec) Write(callerId uint64, p packets.Packet) (uint64, error) {
-	return e.encoder.encodePacket(callerId, p)
+type atomicId struct {
+	id *uint64
+}
+
+func newAtomicId(id *uint64) atomicId {
+	return atomicId{id}
+}
+
+func (p atomicId) next() uint64 {
+	return atomic.AddUint64(p.id, 1)
 }
