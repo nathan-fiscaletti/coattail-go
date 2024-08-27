@@ -4,5 +4,8 @@ type Action struct {
 	Unit
 
 	name string
-	peer PeerAdapter
+}
+
+func (a Action) Name() string {
+	return a.name
 }

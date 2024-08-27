@@ -79,9 +79,8 @@ func (i *localPeerAdapter) Actions() []Action {
 		return h.unitType == unitTypeAction
 	}), func(h anyUnit, _ int) Action {
 		return Action{
-			name: h.name,
 			Unit: h.Unit,
-			peer: i,
+			name: h.name,
 		}
 	})
 }
@@ -113,10 +112,8 @@ func (i *localPeerAdapter) Receivers() []Receiver {
 		return h.unitType == unitTypeReceiver
 	}), func(h anyUnit, _ int) Receiver {
 		return Receiver{
-			name: h.name,
 			Unit: h.Unit,
-
-			peer: i,
+			name: h.name,
 		}
 	})
 }

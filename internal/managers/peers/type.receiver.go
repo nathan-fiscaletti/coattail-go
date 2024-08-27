@@ -4,5 +4,8 @@ type Receiver struct {
 	Unit
 
 	name string
-	peer PeerAdapter
+}
+
+func (r Receiver) Name() string {
+	return r.name
 }
