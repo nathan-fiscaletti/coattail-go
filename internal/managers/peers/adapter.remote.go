@@ -1,6 +1,7 @@
-package coattail
+package peers
 
 import (
+	"context"
 	"fmt"
 	"net"
 
@@ -34,7 +35,7 @@ func (i *remotePeerAdapter) RunCommunicationTest() error {
 	}
 
 	fmt.Printf("response: %v\n", resp)
-	resp.Handle()
+	resp.Handle(comm.Context())
 
 	return nil
 }
@@ -52,7 +53,8 @@ func (i *remotePeerAdapter) communicator() (*protocol.Communicator, error) {
 			return nil, err
 		}
 
-		i.comm = protocol.NewCommunicator(conn)
+		ctx := context.Background()
+		i.comm = protocol.NewCommunicator(ctx, conn)
 		i.comm.Start()
 	}
 

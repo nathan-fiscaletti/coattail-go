@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	ct := coattail.Local()
+	ct := coattail.Manage()
 
 	peer, err := ct.GetPeer("peer-1")
 	if err != nil {

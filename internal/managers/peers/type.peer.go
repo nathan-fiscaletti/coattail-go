@@ -1,35 +1,4 @@
-package coattail
-
-type ActionManager interface {
-	RunAction(name string, arg interface{}) (interface{}, error)
-	RunAndPublishAction(name string, arg interface{}) (interface{}, error)
-	Actions() []Action
-	AddAction(name string, unit Unit) error
-	HasAction(name string) bool
-}
-
-type ReceiverManager interface {
-	Receivers() []Receiver
-	HasReceiver(name string) bool
-	AddReceiver(name string, unit Unit) error
-}
-
-type PeerManager interface {
-	GetPeer(id string) (*Peer, error)
-	HasPeer(id string) (bool, error)
-	Peers() ([]*Peer, error)
-
-	// RunCommunicationTest runs a communication test with the remote peer.
-	// This is a temporary development function and will be removed in the future.
-	RunCommunicationTest() error
-}
-
-// PeerAdapter is a unified interface for both local and remote peers.
-type PeerAdapter interface {
-	ActionManager
-	ReceiverManager
-	PeerManager
-}
+package peers
 
 const (
 	LocalPeerId string = "local"
@@ -61,4 +30,35 @@ func newPeer(details PeerDetails, adapter PeerAdapter) *Peer {
 		PeerDetails: details,
 		PeerAdapter: adapter,
 	}
+}
+
+// PeerAdapter is a unified interface for both local and remote peers.
+type PeerAdapter interface {
+	ActionManager
+	ReceiverManager
+	PeerManager
+}
+
+type ActionManager interface {
+	RunAction(name string, arg interface{}) (interface{}, error)
+	RunAndPublishAction(name string, arg interface{}) (interface{}, error)
+	Actions() []Action
+	AddAction(name string, unit Unit) error
+	HasAction(name string) bool
+}
+
+type ReceiverManager interface {
+	Receivers() []Receiver
+	HasReceiver(name string) bool
+	AddReceiver(name string, unit Unit) error
+}
+
+type PeerManager interface {
+	GetPeer(id string) (*Peer, error)
+	HasPeer(id string) (bool, error)
+	Peers() ([]*Peer, error)
+
+	// RunCommunicationTest runs a communication test with the remote peer.
+	// This is a temporary development function and will be removed in the future.
+	RunCommunicationTest() error
 }

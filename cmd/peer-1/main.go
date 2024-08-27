@@ -5,8 +5,8 @@ import (
 )
 
 func main() {
-	// Start the coattail application.
-	err := coattail.Run()
+	// Start the coattail instance..
+	err := coattail.RunInstance()
 	if err != nil {
 		panic(err)
 	}

@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
+	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 )
 
 var responseHandlers = sync.Map{}
@@ -20,24 +22,27 @@ type outputOperation struct {
 	respChan chan interface{}
 }
 
-type CommunicatorConfiguration struct {
-	AskTimeout time.Duration
-}
-
 type Communicator struct {
-	conn net.Conn
-
-	wg     sync.WaitGroup
-	output chan outputOperation
-
+	ctx      context.Context
+	conn     net.Conn
+	wg       sync.WaitGroup
+	output   chan outputOperation
 	finished bool
 }
 
-func NewCommunicator(conn net.Conn) *Communicator {
+func NewCommunicator(ctx context.Context, conn net.Conn) *Communicator {
+	// Initialize services.
+	ctx = authentication.ContextWithService(ctx)
+
 	return &Communicator{
+		ctx:    ctx,
 		conn:   conn,
 		output: make(chan outputOperation, 100),
 	}
+}
+
+func (c *Communicator) Context() context.Context {
+	return c.ctx
 }
 
 func (c *Communicator) Start() {
@@ -89,6 +94,8 @@ type Question struct {
 // response packet and an error if the packet could not be sent or if the
 // response could not be received. The response packet will not be automatically
 // handled. You must call the Handle method on the response packet to handle it.
+// The context passed to the Handle method will be the same context that was
+// passed to the Communicator when it was created.
 func (c *Communicator) Ask(question Question) (packets.Packet, error) {
 	errChan := make(chan error)
 	respChan := make(chan interface{})
@@ -217,7 +224,7 @@ func (c *Communicator) startInput() {
 				}
 			}
 
-			resp, err := packet.Data.(packets.Packet).Handle()
+			resp, err := packet.Data.(packets.Packet).Handle(c.ctx)
 			if err != nil {
 				fmt.Printf("Error executing packet: %s\n", err)
 			}

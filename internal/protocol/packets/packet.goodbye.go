@@ -1,6 +1,7 @@
 package packets
 
 import (
+	"context"
 	"encoding/gob"
 	"fmt"
 )
@@ -13,7 +14,7 @@ type GoodbyePacket struct {
 	Message string `json:"message"`
 }
 
-func (g GoodbyePacket) Handle() (Packet, error) {
+func (g GoodbyePacket) Handle(ctx context.Context) (Packet, error) {
 	fmt.Printf("handle(Goodbye): %s\n", g.Message)
 	return nil, nil
 }

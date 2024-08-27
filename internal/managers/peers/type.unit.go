@@ -1,4 +1,4 @@
-package coattail
+package peers
 
 // Unit is an interface that defines a unit of work that can be executed.
 type Unit interface {
@@ -35,18 +35,4 @@ type anyUnit struct {
 
 	name     string
 	unitType unitType
-}
-
-type Action struct {
-	Unit
-
-	name string
-	peer PeerAdapter
-}
-
-type Receiver struct {
-	Unit
-
-	name string
-	peer PeerAdapter
 }

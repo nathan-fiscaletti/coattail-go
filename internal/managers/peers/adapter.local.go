@@ -1,16 +1,14 @@
-package coattail
+package peers
 
 import (
 	"fmt"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol"
 	"github.com/samber/lo"
 )
 
 /* ====== Type ====== */
 
 type localPeerAdapter struct {
-	host  *protocol.Host
 	units []anyUnit
 	peers []PeerDetails
 }

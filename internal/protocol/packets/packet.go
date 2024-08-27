@@ -1,9 +1,12 @@
 package packets
 
-import "reflect"
+import (
+	"context"
+	"reflect"
+)
 
 type Packet interface {
-	Handle() (Packet, error)
+	Handle(ctx context.Context) (Packet, error)
 }
 
 // GetPacketData returns a map of the fields of a packet.
