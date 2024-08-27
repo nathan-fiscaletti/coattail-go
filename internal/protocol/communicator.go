@@ -161,25 +161,25 @@ func (c *Communicator) startOutput() {
 	defer c.wg.Done()
 
 	for {
-		packetHandler, ok := <-c.output
+		operation, ok := <-c.output
 		if !ok {
 			break
 		}
 
-		id, err := c.codec.Write(packetHandler.callerId, packetHandler.packet)
+		id, err := c.codec.Write(operation.callerId, operation.packet)
 		if err != nil {
-			packetHandler.errChan <- err
+			operation.errChan <- err
 			continue
 		}
 
-		if packetHandler.respChan != nil {
-			responseHandlers.Store(id, packetHandler.respChan)
+		if operation.respChan != nil {
+			responseHandlers.Store(id, operation.respChan)
 		}
 
-		packetHandler.errChan <- nil
+		operation.errChan <- nil
 
-		if packetHandler.idChan != nil {
-			packetHandler.idChan <- id
+		if operation.idChan != nil {
+			operation.idChan <- id
 		}
 	}
 }
