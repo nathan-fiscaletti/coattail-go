@@ -1,3 +1,4 @@
+// Coattail is a package.
 package coattail
 
 import (
@@ -17,16 +18,16 @@ func RunInstance() error {
 	})
 }
 
-var peersService *peers.Service
+var peersManager *peers.Manager
 
-func getManager() *peers.Service {
-	if peersService == nil {
-		m, err := peers.NewService()
+func getManager() *peers.Manager {
+	if peersManager == nil {
+		m, err := peers.NewManager()
 		if err != nil {
 			panic(err)
 		}
-		peersService = m
+		peersManager = m
 	}
 
-	return peersService
+	return peersManager
 }

@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 )
 
-type Service struct {
+type Manager struct {
 	local *Peer
 }
 
-func NewService() (*Service, error) {
-	s := &Service{}
+func NewManager() (*Manager, error) {
+	s := &Manager{}
 	err := s.loadLocalPeer()
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func NewService() (*Service, error) {
 	return s, nil
 }
 
-func (p *Service) loadLocalPeer() error {
+func (p *Manager) loadLocalPeer() error {
 	peers, err := p.loadPeers()
 	if err != nil {
 		return fmt.Errorf("error loading peers: %s", err)
@@ -39,11 +39,11 @@ func (p *Service) loadLocalPeer() error {
 	return nil
 }
 
-func (p *Service) LocalPeer() *Peer {
+func (p *Manager) LocalPeer() *Peer {
 	return p.local
 }
 
-func (p *Service) loadPeers() ([]PeerDetails, error) {
+func (p *Manager) loadPeers() ([]PeerDetails, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
