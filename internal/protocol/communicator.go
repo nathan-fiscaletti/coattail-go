@@ -8,23 +8,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/encoding"
 	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 )
 
-var responseHandlers = sync.Map{}
-
-type outputOperation struct {
-	callerId uint64
-	packet   packets.Packet
-	idChan   chan uint64
-	errChan  chan error
-	respChan chan interface{}
-}
-
 type Communicator struct {
 	ctx      context.Context
 	conn     net.Conn
+	codec    *encoding.Codec
 	wg       sync.WaitGroup
 	output   chan outputOperation
 	finished bool
@@ -37,6 +29,7 @@ func NewCommunicator(ctx context.Context, conn net.Conn) *Communicator {
 	return &Communicator{
 		ctx:    ctx,
 		conn:   conn,
+		codec:  encoding.NewCodec(conn),
 		output: make(chan outputOperation, 100),
 	}
 }
@@ -129,6 +122,16 @@ func (c *Communicator) Ask(question Question) (packets.Packet, error) {
 	}
 }
 
+var responseHandlers = sync.Map{}
+
+type outputOperation struct {
+	callerId uint64
+	packet   packets.Packet
+	idChan   chan uint64
+	errChan  chan error
+	respChan chan interface{}
+}
+
 type response struct {
 	CallerID uint64
 	Packet   packets.Packet
@@ -157,15 +160,13 @@ func (c *Communicator) respond(resp response) error {
 func (c *Communicator) startOutput() {
 	defer c.wg.Done()
 
-	encoder := newPacketEncoder(c.conn)
-
 	for {
 		packetHandler, ok := <-c.output
 		if !ok {
 			break
 		}
 
-		id, err := encoder.EncodePacket(packetHandler.callerId, packetHandler.packet)
+		id, err := c.codec.Write(packetHandler.callerId, packetHandler.packet)
 		if err != nil {
 			packetHandler.errChan <- err
 			continue
@@ -190,11 +191,9 @@ func (c *Communicator) startInput() {
 	// Set the initial read deadline to 10 seconds
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-	decoder := newPacketDecoder(c.conn)
-
 	for {
 		// Read and decode the incoming ProtocolPacket
-		packet, err := decoder.NextPacket()
+		packet, err := c.codec.Read()
 
 		// Handle timeout error or EOF
 		if err != nil {
