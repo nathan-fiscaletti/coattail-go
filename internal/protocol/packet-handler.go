@@ -13,20 +13,20 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 )
 
-type Communicator struct {
-	ctx      context.Context
-	conn     net.Conn
-	codec    *encoding.StreamCodec
-	wg       sync.WaitGroup
-	output   chan outputOperation
-	finished bool
+type PacketHandler struct {
+	ctx       context.Context
+	conn      net.Conn
+	codec     *encoding.StreamCodec
+	wg        sync.WaitGroup
+	output    chan outputOperation
+	connected bool
 }
 
-func NewCommunicator(ctx context.Context, conn net.Conn) *Communicator {
+func NewPacketHandler(ctx context.Context, conn net.Conn) *PacketHandler {
 	// Initialize services.
 	ctx = authentication.ContextWithService(ctx)
 
-	return &Communicator{
+	return &PacketHandler{
 		ctx:    ctx,
 		conn:   conn,
 		codec:  encoding.NewStreamCodec(conn),
@@ -34,30 +34,29 @@ func NewCommunicator(ctx context.Context, conn net.Conn) *Communicator {
 	}
 }
 
-func (c *Communicator) Context() context.Context {
+func (c *PacketHandler) Context() context.Context {
 	return c.ctx
 }
 
-func (c *Communicator) Start() {
+func (c *PacketHandler) HandlePackets() {
+	c.connected = true
 	c.wg.Add(2)
 	go c.startOutput()
 	go c.startInput()
-	go c.Wait()
+	go func() {
+		c.wg.Wait()
+		c.connected = false
+	}()
 }
 
-func (c *Communicator) Wait() {
-	c.wg.Wait()
-	c.finished = true
-}
-
-func (c *Communicator) IsFinished() bool {
-	return c.finished
+func (c *PacketHandler) IsConnected() bool {
+	return c.connected
 }
 
 // Say sends a packet to the remote peer and returns an error if the packet
 // could not be sent. If the remote peer response with a packet, it will be
 // automatically handled.
-func (c *Communicator) Say(packet packets.Packet) error {
+func (c *PacketHandler) Say(packet packets.Packet) error {
 	errChan := make(chan error)
 
 	c.output <- outputOperation{
@@ -88,8 +87,8 @@ type Question struct {
 // response could not be received. The response packet will not be automatically
 // handled. You must call the Handle method on the response packet to handle it.
 // The context passed to the Handle method will be the same context that was
-// passed to the Communicator when it was created.
-func (c *Communicator) Ask(question Question) (packets.Packet, error) {
+// passed to the PacketHandler when it was created.
+func (c *PacketHandler) Ask(question Question) (packets.Packet, error) {
 	errChan := make(chan error)
 	respChan := make(chan interface{})
 	idChan := make(chan uint64)
@@ -140,7 +139,7 @@ type response struct {
 // respond sends a packet to the remote peer in response to a packet that was
 // received from the remote peer. Returns an error if the packet could not be
 // sent.
-func (c *Communicator) respond(resp response) error {
+func (c *PacketHandler) respond(resp response) error {
 	errChan := make(chan error)
 
 	c.output <- outputOperation{
@@ -157,7 +156,7 @@ func (c *Communicator) respond(resp response) error {
 	return nil
 }
 
-func (c *Communicator) startOutput() {
+func (c *PacketHandler) startOutput() {
 	defer c.wg.Done()
 
 	for {
@@ -184,7 +183,7 @@ func (c *Communicator) startOutput() {
 	}
 }
 
-func (c *Communicator) startInput() {
+func (c *PacketHandler) startInput() {
 	defer c.wg.Done()
 	defer close(c.output)
 
@@ -207,6 +206,7 @@ func (c *Communicator) startInput() {
 			}
 
 			// If we failed to decode a packet, try again with the next packet
+			// TODO: Implement rate limiting.
 			continue
 		}
 

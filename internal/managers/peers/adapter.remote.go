@@ -14,18 +14,18 @@ import (
 type remotePeerAdapter struct {
 	details PeerDetails
 
-	comm *protocol.Communicator
+	packetHandler *protocol.PacketHandler
 }
 
 // RunCommunicationTest runs a communication test with the remote peer.
 // This is a temporary development function and will be removed in the future.
 func (i *remotePeerAdapter) RunCommunicationTest() error {
-	comm, err := i.communicator()
+	packetHandler, err := i.getPacketHandler()
 	if err != nil {
 		return err
 	}
 
-	resp, err := comm.Ask(protocol.Question{
+	resp, err := packetHandler.Ask(protocol.Question{
 		Packet: packets.HelloPacket{
 			Message: "Hello, I am the first functional packet!",
 		},
@@ -35,7 +35,7 @@ func (i *remotePeerAdapter) RunCommunicationTest() error {
 	}
 
 	fmt.Printf("response: %v\n", resp)
-	resp.Handle(comm.Context())
+	resp.Handle(packetHandler.Context())
 
 	return nil
 }
@@ -46,19 +46,19 @@ func newRemotePeerAdapter(details PeerDetails) *remotePeerAdapter {
 	}
 }
 
-func (i *remotePeerAdapter) communicator() (*protocol.Communicator, error) {
-	if i.comm == nil || i.comm.IsFinished() {
+func (i *remotePeerAdapter) getPacketHandler() (*protocol.PacketHandler, error) {
+	if i.packetHandler == nil || !i.packetHandler.IsConnected() {
 		conn, err := net.Dial("tcp", i.details.Address)
 		if err != nil {
 			return nil, err
 		}
 
 		ctx := context.Background()
-		i.comm = protocol.NewCommunicator(ctx, conn)
-		i.comm.Start()
+		i.packetHandler = protocol.NewPacketHandler(ctx, conn)
+		i.packetHandler.HandlePackets()
 	}
 
-	return i.comm, nil
+	return i.packetHandler, nil
 }
 
 /* ====== Actions ====== */

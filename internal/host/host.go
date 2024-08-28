@@ -37,5 +37,5 @@ func (h *host) start() error {
 }
 
 func (h *host) handleRemotePeer(conn net.Conn) {
-	go protocol.NewCommunicator(context.Background(), conn).Start()
+	go protocol.NewPacketHandler(context.Background(), conn).HandlePackets()
 }
