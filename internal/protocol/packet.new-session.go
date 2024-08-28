@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 )
 
@@ -15,7 +16,7 @@ type NewSessionPacket struct {
 	AuthenticationToken string `json:"authentication_token"`
 }
 
-func (h NewSessionPacket) Handle(ctx context.Context) (any, error) {
+func (h NewSessionPacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
 	authService := authentication.GetService(ctx)
 
 	res := authService.Authenticate(h.AuthenticationToken)

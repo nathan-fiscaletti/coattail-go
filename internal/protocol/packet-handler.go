@@ -231,23 +231,12 @@ func (c *PacketHandler) startInput() {
 				fmt.Printf("Error executing packet: %s\n", err)
 			}
 
-			if _, isPacket := resp.(protocoltypes.Packet); !isPacket {
-				fmt.Printf("Error executing packet: response is not a packet\n")
-				return
-			}
-
-			// If the packet handler returned an EmptyPacket, do not send a
-			// response back to the remote peer.
-			if _, isEmpty := resp.(protocoltypes.EmptyPacket); isEmpty {
-				return
-			}
-
 			// If the packet handler returned a response, send it back to the
 			// remote peer.
 			if resp != nil {
 				err = c.respond(response{
 					CallerID: packet.ID,
-					Packet:   resp.(protocoltypes.Packet),
+					Packet:   resp,
 				})
 				if err != nil {
 					fmt.Printf("Error writing response packet: %s\n", err)

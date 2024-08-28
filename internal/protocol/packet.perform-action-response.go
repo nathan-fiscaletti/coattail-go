@@ -3,6 +3,8 @@ package protocol
 import (
 	"context"
 	"encoding/gob"
+
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 )
 
 func init() {
@@ -14,6 +16,6 @@ type PerformActionResponsePacket struct {
 	Data   any    `json:"data"`
 }
 
-func (h PerformActionResponsePacket) Handle(ctx context.Context) (any, error) {
-	return NilPacket{}, nil
+func (h PerformActionResponsePacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
+	return nil, nil
 }
