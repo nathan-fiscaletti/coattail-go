@@ -1,17 +1,17 @@
-package encoding
+package protocol
 
 import (
 	"encoding/gob"
 	"io"
 	"sync/atomic"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 )
 
 type EncodedPacket struct {
 	ID           uint64
 	RespondingTo uint64
-	Data         interface{}
+	Data         any
 }
 
 type StreamCodec struct {
@@ -38,7 +38,7 @@ func (e StreamCodec) Read() (EncodedPacket, error) {
 	return p, nil
 }
 
-func (e StreamCodec) Write(callerId uint64, p packets.Packet) (uint64, error) {
+func (e StreamCodec) Write(callerId uint64, p protocoltypes.Packet) (uint64, error) {
 	packetId := e.id.next()
 	err := e.encoder.Encode(EncodedPacket{
 		ID:           packetId,

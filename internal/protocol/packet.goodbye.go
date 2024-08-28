@@ -1,4 +1,4 @@
-package packets
+package protocol
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type GoodbyePacket struct {
 	Message string `json:"message"`
 }
 
-func (g GoodbyePacket) Handle(ctx context.Context) (Packet, error) {
+func (g GoodbyePacket) Handle(ctx context.Context) (any, error) {
 	fmt.Printf("handle(Goodbye): %s\n", g.Message)
-	return nil, nil
+	return NilPacket{}, nil
 }

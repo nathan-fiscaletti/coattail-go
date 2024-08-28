@@ -8,15 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/encoding"
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/packets"
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 )
 
 type PacketHandler struct {
 	ctx       context.Context
 	conn      net.Conn
-	codec     *encoding.StreamCodec
+	codec     *StreamCodec
 	wg        sync.WaitGroup
 	output    chan outputOperation
 	connected bool
@@ -29,7 +28,7 @@ func NewPacketHandler(ctx context.Context, conn net.Conn) *PacketHandler {
 	return &PacketHandler{
 		ctx:    ctx,
 		conn:   conn,
-		codec:  encoding.NewStreamCodec(conn),
+		codec:  NewStreamCodec(conn),
 		output: make(chan outputOperation, 100),
 	}
 }
@@ -56,7 +55,7 @@ func (c *PacketHandler) IsConnected() bool {
 // Send sends a packet to the remote peer and returns an error if the packet
 // could not be sent. If the remote peer response with a packet, it will be
 // automatically handled.
-func (c *PacketHandler) Send(packet packets.Packet) error {
+func (c *PacketHandler) Send(packet protocoltypes.Packet) error {
 	errChan := make(chan error)
 
 	c.output <- outputOperation{
@@ -75,7 +74,7 @@ func (c *PacketHandler) Send(packet packets.Packet) error {
 
 type Request struct {
 	// Packet to send to the remote peer
-	Packet packets.Packet
+	Packet protocoltypes.Packet
 	// ResponseTimeout is the amount of time to wait for a response from the
 	// remote peer. If the response is not received within this time, an error
 	// will be returned. Defaults to 10 seconds.
@@ -88,9 +87,9 @@ type Request struct {
 // handled. You must call the Handle method on the response packet to handle it.
 // The context passed to the Handle method will be the same context that was
 // passed to the PacketHandler when it was created.
-func (c *PacketHandler) Request(request Request) (packets.Packet, error) {
+func (c *PacketHandler) Request(request Request) (protocoltypes.Packet, error) {
 	errChan := make(chan error)
-	respChan := make(chan interface{})
+	respChan := make(chan any)
 	idChan := make(chan uint64)
 
 	c.output <- outputOperation{
@@ -117,7 +116,7 @@ func (c *PacketHandler) Request(request Request) (packets.Packet, error) {
 		responseHandlers.Delete(id)
 		return nil, fmt.Errorf("timeout waiting for response")
 	case resp := <-respChan:
-		return resp.(packets.Packet), nil
+		return resp.(protocoltypes.Packet), nil
 	}
 }
 
@@ -125,15 +124,15 @@ var responseHandlers = sync.Map{}
 
 type outputOperation struct {
 	callerId uint64
-	packet   packets.Packet
+	packet   protocoltypes.Packet
 	idChan   chan uint64
 	errChan  chan error
-	respChan chan interface{}
+	respChan chan any
 }
 
 type response struct {
 	CallerID uint64
-	Packet   packets.Packet
+	Packet   protocoltypes.Packet
 }
 
 // respond sends a packet to the remote peer in response to a packet that was
@@ -219,7 +218,7 @@ func (c *PacketHandler) startInput() {
 			// original packet (if any) and send it the response.
 			if packet.RespondingTo != 0 {
 				if respChan, ok := responseHandlers.Load(packet.RespondingTo); ok {
-					respChan.(chan interface{}) <- packet.Data
+					respChan.(chan any) <- packet.Data
 					// Delete the response handler after it has been used
 					responseHandlers.Delete(packet.RespondingTo)
 					return
@@ -227,9 +226,20 @@ func (c *PacketHandler) startInput() {
 			}
 
 			// Handle the packet.
-			resp, err := packet.Data.(packets.Packet).Handle(c.ctx)
+			resp, err := packet.Data.(protocoltypes.Packet).Handle(c.ctx)
 			if err != nil {
 				fmt.Printf("Error executing packet: %s\n", err)
+			}
+
+			if _, isPacket := resp.(protocoltypes.Packet); !isPacket {
+				fmt.Printf("Error executing packet: response is not a packet\n")
+				return
+			}
+
+			// If the packet handler returned an EmptyPacket, do not send a
+			// response back to the remote peer.
+			if _, isEmpty := resp.(protocoltypes.EmptyPacket); isEmpty {
+				return
 			}
 
 			// If the packet handler returned a response, send it back to the
@@ -237,7 +247,7 @@ func (c *PacketHandler) startInput() {
 			if resp != nil {
 				err = c.respond(response{
 					CallerID: packet.ID,
-					Packet:   resp,
+					Packet:   resp.(protocoltypes.Packet),
 				})
 				if err != nil {
 					fmt.Printf("Error writing response packet: %s\n", err)

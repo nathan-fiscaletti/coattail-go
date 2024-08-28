@@ -1,4 +1,4 @@
-package peers
+package protocoltypes
 
 const (
 	LocalPeerId string = "local"
@@ -25,7 +25,7 @@ type Peer struct {
 	PeerAdapter
 }
 
-func newPeer(details PeerDetails, adapter PeerAdapter) *Peer {
+func NewPeer(details PeerDetails, adapter PeerAdapter) *Peer {
 	return &Peer{
 		PeerDetails: details,
 		PeerAdapter: adapter,
@@ -40,8 +40,8 @@ type PeerAdapter interface {
 }
 
 type ActionManager interface {
-	RunAction(name string, arg interface{}) (interface{}, error)
-	RunAndPublishAction(name string, arg interface{}) (interface{}, error)
+	RunAction(name string, arg any) (any, error)
+	RunAndPublishAction(name string, arg any) (any, error)
 	Actions() []Action
 	AddAction(name string, unit Unit) error
 	HasAction(name string) bool
@@ -56,9 +56,5 @@ type ReceiverManager interface {
 type PeerManager interface {
 	GetPeer(id string) (*Peer, error)
 	HasPeer(id string) (bool, error)
-	Peers() ([]*Peer, error)
-
-	// RunCommunicationTest runs a communication test with the remote peer.
-	// This is a temporary development function and will be removed in the future.
-	RunCommunicationTest() error
+	ListPeers() ([]*Peer, error)
 }

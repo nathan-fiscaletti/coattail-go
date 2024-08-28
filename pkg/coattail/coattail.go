@@ -2,32 +2,32 @@
 package coattail
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/nathan-fiscaletti/coattail-go/internal/host"
-	"github.com/nathan-fiscaletti/coattail-go/internal/managers/peers"
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol"
 )
 
-// Manage returns the local peer.
-func Manage() *Peer {
-	return (*Peer)(getManager().LocalPeer())
+// Init initializes the local peer and context for the current process.
+func Init() (context.Context, error) {
+	return protocol.ContextWithManager(context.Background())
 }
 
 // RunInstance starts the local peer. This function will block.
-func RunInstance() error {
+func RunInstance(ctx context.Context) error {
 	return host.Run(host.HostConfig{
-		Port: 5244,
+		Context: ctx,
+		Port:    5244,
 	})
 }
 
-var peersManager *peers.Manager
-
-func getManager() *peers.Manager {
-	if peersManager == nil {
-		m, err := peers.NewManager()
-		if err != nil {
-			panic(err)
-		}
-		peersManager = m
+// Manage returns the peer manager for the current process.
+func Manage(ctx context.Context) (*protocol.Manager, error) {
+	mgr := protocol.GetManager(ctx)
+	if mgr == nil {
+		return nil, fmt.Errorf("no peer manager found in context")
 	}
 
-	return peersManager
+	return mgr, nil
 }

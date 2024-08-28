@@ -1,17 +1,40 @@
-package peers
+package protocol
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
+	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 )
 
-type Manager struct {
-	local *Peer
+func ContextWithManager(ctx context.Context) (context.Context, error) {
+	mgr, err := newManager()
+	if err != nil {
+		return nil, err
+	}
+
+	return context.WithValue(ctx, keys.PeerManagerKey, mgr), nil
 }
 
-func NewManager() (*Manager, error) {
+func GetManager(ctx context.Context) *Manager {
+	if v := ctx.Value(keys.PeerManagerKey); v != nil {
+		if m, ok := v.(*Manager); ok {
+			return m
+		}
+	}
+
+	return nil
+}
+
+type Manager struct {
+	local *protocoltypes.Peer
+}
+
+func newManager() (*Manager, error) {
 	s := &Manager{}
 	err := s.loadLocalPeer()
 	if err != nil {
@@ -27,29 +50,29 @@ func (p *Manager) loadLocalPeer() error {
 		return fmt.Errorf("error loading peers: %s", err)
 	}
 
-	p.local = newPeer(
-		PeerDetails{
-			PeerID: LocalPeerId,
+	p.local = protocoltypes.NewPeer(
+		protocoltypes.PeerDetails{
+			PeerID: protocoltypes.LocalPeerId,
 		},
-		&localPeerAdapter{
-			units: []anyUnit{},
-			peers: peers,
+		&LocalPeerAdapter{
+			Units: []protocoltypes.AnyUnit{},
+			Peers: peers,
 		},
 	)
 	return nil
 }
 
-func (p *Manager) LocalPeer() *Peer {
+func (p *Manager) LocalPeer() *protocoltypes.Peer {
 	return p.local
 }
 
-func (p *Manager) loadPeers() ([]PeerDetails, error) {
+func (p *Manager) loadPeers() ([]protocoltypes.PeerDetails, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
-	result := []PeerDetails{}
+	result := []protocoltypes.PeerDetails{}
 
 	peerDir := filepath.Join(cwd, "peers")
 	if _, err := os.Stat(peerDir); os.IsNotExist(err) {
@@ -69,7 +92,7 @@ func (p *Manager) loadPeers() ([]PeerDetails, error) {
 				continue
 			}
 
-			peerDetails := PeerDetails{}
+			peerDetails := protocoltypes.PeerDetails{}
 			err = json.NewDecoder(f).Decode(&peerDetails)
 			if err != nil {
 				fmt.Printf("error decoding peer file %s: %s\n", file.Name(), err)

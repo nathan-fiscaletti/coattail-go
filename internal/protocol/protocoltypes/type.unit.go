@@ -1,12 +1,12 @@
-package peers
+package protocoltypes
 
 // Unit is an interface that defines a unit of work that can be executed.
 type Unit interface {
-	Execute(interface{}) (interface{}, error)
+	Execute(any) (any, error)
 }
 
 // UnitHandler is a function that defines a unit of work that can be executed.
-type UnitHandler func(interface{}) (interface{}, error)
+type UnitHandler func(any) (any, error)
 
 // NewUnit creates a new Unit from a UnitHandler.
 func NewUnit(f UnitHandler) Unit {
@@ -19,20 +19,20 @@ type unitFunc struct {
 	UnitHandler
 }
 
-func (u unitFunc) Execute(args interface{}) (interface{}, error) {
+func (u unitFunc) Execute(args any) (any, error) {
 	return u.UnitHandler(args)
 }
 
-type unitType int
+type UnitType int
 
 const (
-	unitTypeAction unitType = iota
-	unitTypeReceiver
+	UnitTypeAction UnitType = iota
+	UnitTypeReceiver
 )
 
-type anyUnit struct {
+type AnyUnit struct {
 	Unit
 
-	name     string
-	unitType unitType
+	Name     string
+	UnitType UnitType
 }

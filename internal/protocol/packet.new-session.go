@@ -1,4 +1,4 @@
-package packets
+package protocol
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type NewSessionPacket struct {
 	AuthenticationToken string `json:"authentication_token"`
 }
 
-func (h NewSessionPacket) Handle(ctx context.Context) (Packet, error) {
+func (h NewSessionPacket) Handle(ctx context.Context) (any, error) {
 	authService := authentication.GetService(ctx)
 
 	res := authService.Authenticate(h.AuthenticationToken)

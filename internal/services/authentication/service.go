@@ -3,7 +3,7 @@ package authentication
 import (
 	"context"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/services"
+	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 )
 
 type Service struct{}
@@ -17,11 +17,11 @@ func (s *Service) Authenticate(token string) string {
 }
 
 func ContextWithService(ctx context.Context) context.Context {
-	return context.WithValue(ctx, services.AuthenticationServiceKey, newService())
+	return context.WithValue(ctx, keys.AuthenticationServiceKey, newService())
 }
 
 func GetService(ctx context.Context) *Service {
-	if v := ctx.Value(services.AuthenticationServiceKey); v != nil {
+	if v := ctx.Value(keys.AuthenticationServiceKey); v != nil {
 		if s, ok := v.(*Service); ok {
 			return s
 		}

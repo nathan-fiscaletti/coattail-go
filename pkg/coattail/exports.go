@@ -1,12 +1,16 @@
 package coattail
 
-import "github.com/nathan-fiscaletti/coattail-go/internal/managers/peers"
+import "github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 
-type Peer peers.Peer
-type PeerDetails peers.PeerDetails
-type Action peers.Action
-type Receiver peers.Receiver
-type Unit peers.Unit
-type UnitHandler peers.UnitHandler
+const LocalPeerId string = protocoltypes.LocalPeerId
 
-const LocalPeerId string = peers.LocalPeerId
+type Peer protocoltypes.Peer
+type PeerDetails protocoltypes.PeerDetails
+
+type Unit protocoltypes.Unit
+type UnitHandler protocoltypes.UnitHandler
+
+var NewUnit = protocoltypes.NewUnit
+
+type Action protocoltypes.Action
+type Receiver protocoltypes.Receiver

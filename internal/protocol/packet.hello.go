@@ -1,4 +1,4 @@
-package packets
+package protocol
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type HelloPacket struct {
 	Message string `json:"message"`
 }
 
-func (h HelloPacket) Handle(ctx context.Context) (Packet, error) {
+func (h HelloPacket) Handle(ctx context.Context) (any, error) {
 	fmt.Printf("handle(Hello): %s\n", h.Message)
 	return GoodbyePacket{
 		Message: "Goodbye, I am the second functional packet!",

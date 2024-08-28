@@ -5,20 +5,27 @@ import (
 )
 
 func main() {
-	ct := coattail.Manage()
-
-	peer, err := ct.GetPeer("peer-1")
+	ctx, err := coattail.Init()
 	if err != nil {
 		panic(err)
 	}
 
-	// We're currently using a temporary test function just
-	// to test the network connection between the two peers.
-	err = peer.RunCommunicationTest()
+	mgr, err := coattail.Manage(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	// Keep the program running
-	select {}
+	remote, err := mgr.LocalPeer().GetPeer("peer-1")
+	if err != nil {
+		panic(err)
+	}
+
+	res, err := remote.RunAction("test", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	if resStr, ok := res.(string); ok {
+		println(resStr)
+	}
 }

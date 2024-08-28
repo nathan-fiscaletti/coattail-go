@@ -9,15 +9,17 @@ import (
 )
 
 type HostConfig struct {
-	Port int
+	Context context.Context
+	Port    int
 }
 
 type host struct {
+	ctx    context.Context
 	config HostConfig
 }
 
 func newHost(config HostConfig) *host {
-	return &host{config}
+	return &host{ctx: config.Context, config: config}
 }
 
 func (h *host) start() error {
@@ -37,5 +39,5 @@ func (h *host) start() error {
 }
 
 func (h *host) handleRemotePeer(conn net.Conn) {
-	go protocol.NewPacketHandler(context.Background(), conn).HandlePackets()
+	go protocol.NewPacketHandler(h.ctx, conn).HandlePackets()
 }
