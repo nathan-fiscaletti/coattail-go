@@ -53,10 +53,10 @@ func (c *PacketHandler) IsConnected() bool {
 	return c.connected
 }
 
-// Say sends a packet to the remote peer and returns an error if the packet
+// Send sends a packet to the remote peer and returns an error if the packet
 // could not be sent. If the remote peer response with a packet, it will be
 // automatically handled.
-func (c *PacketHandler) Say(packet packets.Packet) error {
+func (c *PacketHandler) Send(packet packets.Packet) error {
 	errChan := make(chan error)
 
 	c.output <- outputOperation{
@@ -73,7 +73,7 @@ func (c *PacketHandler) Say(packet packets.Packet) error {
 	return nil
 }
 
-type Question struct {
+type Request struct {
 	// Packet to send to the remote peer
 	Packet packets.Packet
 	// ResponseTimeout is the amount of time to wait for a response from the
@@ -82,20 +82,20 @@ type Question struct {
 	ResponseTimeout time.Duration
 }
 
-// Ask sends a packet to the remote peer and waits for a response. Returns the
+// Request sends a packet to the remote peer and waits for a response. Returns the
 // response packet and an error if the packet could not be sent or if the
 // response could not be received. The response packet will not be automatically
 // handled. You must call the Handle method on the response packet to handle it.
 // The context passed to the Handle method will be the same context that was
 // passed to the PacketHandler when it was created.
-func (c *PacketHandler) Ask(question Question) (packets.Packet, error) {
+func (c *PacketHandler) Request(request Request) (packets.Packet, error) {
 	errChan := make(chan error)
 	respChan := make(chan interface{})
 	idChan := make(chan uint64)
 
 	c.output <- outputOperation{
 		callerId: 0,
-		packet:   question.Packet,
+		packet:   request.Packet,
 		errChan:  errChan,
 		idChan:   idChan,
 		respChan: respChan,
@@ -108,12 +108,12 @@ func (c *PacketHandler) Ask(question Question) (packets.Packet, error) {
 
 	id := <-idChan
 
-	if question.ResponseTimeout == 0 {
-		question.ResponseTimeout = 10 * time.Second
+	if request.ResponseTimeout == 0 {
+		request.ResponseTimeout = 10 * time.Second
 	}
 
 	select {
-	case <-time.After(question.ResponseTimeout):
+	case <-time.After(request.ResponseTimeout):
 		responseHandlers.Delete(id)
 		return nil, fmt.Errorf("timeout waiting for response")
 	case resp := <-respChan:

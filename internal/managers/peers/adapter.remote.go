@@ -25,7 +25,7 @@ func (i *remotePeerAdapter) RunCommunicationTest() error {
 		return err
 	}
 
-	resp, err := packetHandler.Ask(protocol.Question{
+	resp, err := packetHandler.Request(protocol.Request{
 		Packet: packets.HelloPacket{
 			Message: "Hello, I am the first functional packet!",
 		},
