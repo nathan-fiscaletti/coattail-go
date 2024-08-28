@@ -15,7 +15,7 @@ type EncodedPacket struct {
 }
 
 type StreamCodec struct {
-	id      atomicId
+	id      *atomicId
 	encoder *gob.Encoder
 	decoder *gob.Decoder
 }
@@ -52,14 +52,12 @@ func (e StreamCodec) Write(callerId uint64, p packets.Packet) (uint64, error) {
 	return packetId, nil
 }
 
-type atomicId struct {
-	id *uint64
+type atomicId uint64
+
+func newAtomicId(id *uint64) *atomicId {
+	return (*atomicId)(id)
 }
 
-func newAtomicId(id *uint64) atomicId {
-	return atomicId{id}
-}
-
-func (p atomicId) next() uint64 {
-	return atomic.AddUint64(p.id, 1)
+func (p *atomicId) next() uint64 {
+	return atomic.AddUint64((*uint64)(p), 1)
 }

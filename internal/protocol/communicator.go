@@ -213,21 +213,27 @@ func (c *Communicator) startInput() {
 		// Reset the deadline after successful read & process
 		c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-		// Process the ProtocolPacket based on the ProtocolOperation
+		// Process the Packet in a new goroutine
 		go func() {
+			// If this is a response packet, load the response handler for the
+			// original packet (if any) and send it the response.
 			if packet.RespondingTo != 0 {
 				if respChan, ok := responseHandlers.Load(packet.RespondingTo); ok {
 					respChan.(chan interface{}) <- packet.Data
+					// Delete the response handler after it has been used
 					responseHandlers.Delete(packet.RespondingTo)
 					return
 				}
 			}
 
+			// Handle the packet.
 			resp, err := packet.Data.(packets.Packet).Handle(c.ctx)
 			if err != nil {
 				fmt.Printf("Error executing packet: %s\n", err)
 			}
 
+			// If the packet handler returned a response, send it back to the
+			// remote peer.
 			if resp != nil {
 				err = c.respond(response{
 					CallerID: packet.ID,
