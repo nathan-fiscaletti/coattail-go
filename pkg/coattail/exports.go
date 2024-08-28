@@ -4,7 +4,6 @@ import "github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes
 
 const LocalPeerId string = protocoltypes.LocalPeerId
 
-type Peer protocoltypes.Peer
 type PeerDetails protocoltypes.PeerDetails
 
 type Unit protocoltypes.Unit

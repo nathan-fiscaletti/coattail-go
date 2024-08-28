@@ -5,24 +5,28 @@ import (
 )
 
 func main() {
+	// Initialize coattail
 	ctx, err := coattail.Init()
 	if err != nil {
 		panic(err)
 	}
 
-	mgr, err := coattail.Manage(ctx)
+	// Retrieve the local peer
+	local, err := coattail.Manage(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	err = mgr.LocalPeer().AddAction("test", coattail.NewUnit(func(arg any) (any, error) {
+	// Add an action to the local peer.
+	err = local.AddAction("test", coattail.NewUnit(func(arg any) (any, error) {
 		return "Hello, World!", nil
 	}))
 	if err != nil {
 		panic(err)
 	}
 
-	err = coattail.RunInstance(ctx)
+	// Start the local peer
+	err = coattail.Run(ctx)
 	if err != nil {
 		panic(err)
 	}
