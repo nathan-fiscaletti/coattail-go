@@ -52,22 +52,7 @@ func (i *LocalPeerAdapter) RunAction(name string, arg any) (any, error) {
 	})
 }
 
-func (i *LocalPeerAdapter) RunAndPublishAction(name string, arg any) (any, error) {
-	result, err := i.RunAction(name, arg)
-	if err != nil {
-		return nil, err
-	}
-
-	err = i.publishActionResult(name, arg, result)
-	if err != nil {
-		return result, err
-	}
-
-	return result, nil
-}
-
-// TODO: implement
-func (i *LocalPeerAdapter) publishActionResult(_ string, _ any, _ any) error {
+func (i *LocalPeerAdapter) PublishActionResult(name string, data any) error {
 	return nil
 }
 
@@ -131,6 +116,19 @@ func (i *LocalPeerAdapter) AddReceiver(name string, unit protocoltypes.Unit) err
 		Name:     name,
 		UnitType: protocoltypes.UnitTypeReceiver,
 	})
+
+	return nil
+}
+
+func (i *LocalPeerAdapter) NotifyReceiver(name string, arg any) error {
+	_, err := i.runUnit(runUnitArguments{
+		Type: protocoltypes.UnitTypeReceiver,
+		Name: name,
+		Args: arg,
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

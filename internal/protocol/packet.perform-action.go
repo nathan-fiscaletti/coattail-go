@@ -20,6 +20,9 @@ func (h PerformActionPacket) Handle(ctx context.Context) (protocoltypes.Packet, 
 	mgr := GetManager(ctx)
 
 	res, err := mgr.LocalPeer().RunAction(h.Action, h.Arg)
+	if err != nil {
+		return nil, err
+	}
 
 	return PerformActionResponsePacket{
 		Action: h.Action,

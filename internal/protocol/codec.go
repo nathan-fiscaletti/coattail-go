@@ -61,3 +61,7 @@ func newAtomicId(id *uint64) *atomicId {
 func (p *atomicId) next() uint64 {
 	return atomic.AddUint64((*uint64)(p), 1)
 }
+
+func (p *atomicId) current() uint64 {
+	return atomic.LoadUint64((*uint64)(p))
+}

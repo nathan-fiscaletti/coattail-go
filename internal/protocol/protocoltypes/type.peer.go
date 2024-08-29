@@ -41,7 +41,7 @@ type PeerAdapter interface {
 
 type ActionManager interface {
 	RunAction(name string, arg any) (any, error)
-	RunAndPublishAction(name string, arg any) (any, error)
+	PublishActionResult(name string, data any) error
 	Actions() []Action
 	AddAction(name string, unit Unit) error
 	HasAction(name string) bool
@@ -51,6 +51,7 @@ type ReceiverManager interface {
 	Receivers() []Receiver
 	HasReceiver(name string) bool
 	AddReceiver(name string, unit Unit) error
+	NotifyReceiver(name string, arg any) error
 }
 
 type PeerManager interface {

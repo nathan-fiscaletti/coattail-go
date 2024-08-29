@@ -45,7 +45,7 @@ func (i *RemotePeerAdapter) RunAction(name string, arg any) (any, error) {
 		return nil, err
 	}
 
-	respPacket, err := ph.Request(Request{
+	packet, err := ph.Request(Request{
 		Packet: PerformActionPacket{
 			Action: name,
 			Arg:    arg,
@@ -55,11 +55,16 @@ func (i *RemotePeerAdapter) RunAction(name string, arg any) (any, error) {
 		return nil, err
 	}
 
-	return respPacket.(PerformActionResponsePacket).Data, nil
+	respPacket, isRespPacket := packet.(PerformActionResponsePacket)
+	if !isRespPacket {
+		return nil, fmt.Errorf("unexpected response packet")
+	}
+
+	return respPacket.Data, nil
 }
 
-func (i *RemotePeerAdapter) RunAndPublishAction(name string, arg any) (any, error) {
-	return nil, nil
+func (i *RemotePeerAdapter) PublishActionResult(name string, data any) error {
+	return nil
 }
 
 func (i *RemotePeerAdapter) Actions() []protocoltypes.Action {
@@ -87,6 +92,20 @@ func (i *RemotePeerAdapter) HasReceiver(name string) bool {
 
 func (i *RemotePeerAdapter) AddReceiver(name string, unit protocoltypes.Unit) error {
 	return fmt.Errorf("cannot add receiver to remote peer")
+}
+
+func (i *RemotePeerAdapter) NotifyReceiver(name string, arg any) error {
+	ph, err := i.getPacketHandler()
+	if err != nil {
+		return err
+	}
+
+	err = ph.Send(NotifyReceiverPacket{
+		Receiver: name,
+		Data:     arg,
+	})
+
+	return err
 }
 
 /* ====== Peers ====== */

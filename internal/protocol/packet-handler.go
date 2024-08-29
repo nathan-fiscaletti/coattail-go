@@ -189,9 +189,19 @@ func (c *PacketHandler) startInput() {
 	// Set the initial read deadline to 10 seconds
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
+	var lastPacketId uint64
+
 	for {
 		// Read and decode the incoming ProtocolPacket
 		packet, err := c.codec.Read()
+
+		if packet.ID <= lastPacketId {
+			// If the packet ID is less than or equal to the last packet ID,
+			// ignore the packet. This is to prevent replay attacks.
+			continue
+		}
+
+		lastPacketId = packet.ID
 
 		// Handle timeout error or EOF
 		if err != nil {
