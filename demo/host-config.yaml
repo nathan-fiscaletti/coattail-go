@@ -1,0 +1,4 @@
+host:
+  service_port: 5244
+  api_port: 8081
+  web_port: 8080

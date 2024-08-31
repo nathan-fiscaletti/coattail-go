@@ -17,10 +17,7 @@ func Init() (context.Context, error) {
 
 // Run starts the local peer. This function will block.
 func Run(ctx context.Context) error {
-	return host.Run(host.HostConfig{
-		Context: ctx,
-		Port:    5244,
-	})
+	return host.Run(ctx)
 }
 
 // Manage returns the local peer.

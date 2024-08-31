@@ -17,5 +17,7 @@ type NotifyReceiverPacket struct {
 }
 
 func (n NotifyReceiverPacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
-	return nil, GetManager(ctx).LocalPeer().NotifyReceiver(n.Receiver, n.Data)
+	mgr := GetManager(ctx)
+	return nil, mgr.LocalPeer().
+		NotifyReceiver(n.Receiver, n.Data)
 }
