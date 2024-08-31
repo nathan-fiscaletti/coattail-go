@@ -8,10 +8,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
 	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 )
 
+// MaxBufferedOperations is the maximum number of operations that can be buffered
+// before the PacketHandler will block. If this value is reached, the PacketHandler
+// will block until an operation is completed.
+const MaxBufferedOperations = 100
+
+// PacketHandler is a handler for incoming and outgoing packets on a connection.
 type PacketHandler struct {
 	ctx       context.Context
 	conn      net.Conn
@@ -21,24 +28,37 @@ type PacketHandler struct {
 	connected bool
 }
 
+// NewPacketHandler creates a new PacketHandler with the provided context and
+// connection. The PacketHandler will handle incoming and outgoing packets on
+// the connection. The context will be used to pass services to the packet
+// handlers.
 func NewPacketHandler(ctx context.Context, conn net.Conn) *PacketHandler {
 	// Initialize services.
 	ctx = authentication.ContextWithService(ctx)
 
 	return &PacketHandler{
-		ctx:    ctx,
-		conn:   conn,
-		codec:  NewStreamCodec(conn),
-		output: make(chan outputOperation, 100),
+		ctx:   ctx,
+		conn:  conn,
+		codec: NewStreamCodec(conn),
 	}
 }
 
+// Context returns the context that was passed to the PacketHandler when it was
+// created.
 func (c *PacketHandler) Context() context.Context {
 	return c.ctx
 }
 
+// HandlePackets starts handling incoming and outgoing packets on the connection.
+// This function will block until the connection is closed.
 func (c *PacketHandler) HandlePackets() {
+	if c.connected {
+		panic("attempted to start handling packets on an already connected PacketHandler")
+	}
+
 	c.connected = true
+	c.wg = sync.WaitGroup{}
+	c.output = make(chan outputOperation, MaxBufferedOperations)
 	c.wg.Add(2)
 	go c.startOutput()
 	go c.startInput()
@@ -48,6 +68,8 @@ func (c *PacketHandler) HandlePackets() {
 	}()
 }
 
+// IsConnected returns true if the PacketHandler is currently connected to a
+// remote peer.
 func (c *PacketHandler) IsConnected() bool {
 	return c.connected
 }
@@ -56,22 +78,25 @@ func (c *PacketHandler) IsConnected() bool {
 // could not be sent. If the remote peer response with a packet, it will be
 // automatically handled.
 func (c *PacketHandler) Send(packet protocoltypes.Packet) error {
+	// Create a new error channel used to return the result of the operation
 	errChan := make(chan error)
 
+	// Send the packet to the remote peer
 	c.output <- outputOperation{
 		callerId: 0,
 		packet:   packet,
 		errChan:  errChan,
 	}
 
-	err := <-errChan
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// Wait for the result of the operation
+	return <-errChan
 }
 
+// Request is a request to send a packet to the remote peer and wait for a
+// response. The response packet will not be automatically handled. You must
+// call the Handle method on the response packet to handle it. The context
+// passed to the Handle method will be the same context that was passed to the
+// PacketHandler when it was created.
 type Request struct {
 	// Packet to send to the remote peer
 	Packet protocoltypes.Packet
@@ -147,12 +172,7 @@ func (c *PacketHandler) respond(resp response) error {
 		errChan:  errChan,
 	}
 
-	err := <-errChan
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return <-errChan
 }
 
 func (c *PacketHandler) startOutput() {
@@ -186,6 +206,8 @@ func (c *PacketHandler) startInput() {
 	defer c.wg.Done()
 	defer close(c.output)
 
+	logger := logging.GetLogger(c.Context())
+
 	// Set the initial read deadline to 10 seconds
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
@@ -206,11 +228,11 @@ func (c *PacketHandler) startInput() {
 		// Handle timeout error or EOF
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				fmt.Println("Connection timed out due to inactivity.")
+				logger.Println("Connection timed out due to inactivity.")
 				return
 			}
 			if err == io.EOF {
-				fmt.Println("Connection closed by peer.")
+				logger.Println("Connection closed by peer.")
 				return
 			}
 
@@ -238,7 +260,7 @@ func (c *PacketHandler) startInput() {
 			// Handle the packet.
 			resp, err := packet.Data.(protocoltypes.Packet).Handle(c.ctx)
 			if err != nil {
-				fmt.Printf("Error executing packet: %s\n", err)
+				logger.Printf("Error executing packet: %s\n", err)
 			}
 
 			// If the packet handler returned a response, send it back to the
@@ -249,7 +271,7 @@ func (c *PacketHandler) startInput() {
 					Packet:   resp,
 				})
 				if err != nil {
-					fmt.Printf("Error writing response packet: %s\n", err)
+					logger.Printf("Error writing response packet: %s\n", err)
 				}
 			}
 		}()

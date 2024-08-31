@@ -39,7 +39,7 @@ func (i *RemotePeerAdapter) getPacketHandler() (*PacketHandler, error) {
 
 /* ====== Actions ====== */
 
-func (i *RemotePeerAdapter) RunAction(name string, arg any) (any, error) {
+func (i *RemotePeerAdapter) RunAction(arg protocoltypes.RunActionArguments) (any, error) {
 	ph, err := i.getPacketHandler()
 	if err != nil {
 		return nil, err
@@ -47,8 +47,9 @@ func (i *RemotePeerAdapter) RunAction(name string, arg any) (any, error) {
 
 	packet, err := ph.Request(Request{
 		Packet: PerformActionPacket{
-			Action: name,
-			Arg:    arg,
+			Action:  arg.Name,
+			Arg:     arg.Arg,
+			Publish: arg.Publish,
 		},
 	})
 	if err != nil {

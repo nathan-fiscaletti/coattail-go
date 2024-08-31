@@ -44,11 +44,11 @@ func (i *LocalPeerAdapter) runUnit(arg runUnitArguments) (any, error) {
 
 /* ====== Actions ====== */
 
-func (i *LocalPeerAdapter) RunAction(name string, arg any) (any, error) {
+func (i *LocalPeerAdapter) RunAction(arg protocoltypes.RunActionArguments) (any, error) {
 	return i.runUnit(runUnitArguments{
 		Type: protocoltypes.UnitTypeAction,
-		Name: name,
-		Args: arg,
+		Name: arg.Name,
+		Args: arg.Arg,
 	})
 }
 
@@ -126,11 +126,8 @@ func (i *LocalPeerAdapter) NotifyReceiver(name string, arg any) error {
 		Name: name,
 		Args: arg,
 	})
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 /* ====== Peers ====== */

@@ -12,8 +12,10 @@ func init() {
 }
 
 type PerformActionResponsePacket struct {
-	Action string `json:"action"`
-	Data   any    `json:"data"`
+	Action         string `json:"action"`
+	Data           any    `json:"data"`
+	Published      bool   `json:"published"`
+	PublishedError error  `json:"published_error"`
 }
 
 func (h PerformActionResponsePacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {

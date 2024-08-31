@@ -39,8 +39,14 @@ type PeerAdapter interface {
 	PeerManager
 }
 
+type RunActionArguments struct {
+	Name    string
+	Arg     any
+	Publish bool
+}
+
 type ActionManager interface {
-	RunAction(name string, arg any) (any, error)
+	RunAction(RunActionArguments) (any, error)
 	PublishActionResult(name string, data any) error
 	Actions() []Action
 	AddAction(name string, unit Unit) error

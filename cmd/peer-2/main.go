@@ -24,7 +24,10 @@ func main() {
 	}
 
 	// Run an action on the remote peer
-	res, err := remote.RunAction("test", nil)
+	res, err := remote.RunAction(coattail.RunActionArguments{
+		Name: "test",
+		Arg:  nil,
+	})
 	if err != nil {
 		panic(err)
 	}
