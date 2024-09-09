@@ -2,13 +2,13 @@ package protocol
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
+	"gopkg.in/yaml.v3"
 )
 
 func ContextWithManager(ctx context.Context) (context.Context, error) {
@@ -31,7 +31,7 @@ func GetManager(ctx context.Context) *Manager {
 }
 
 type Manager struct {
-	local *protocoltypes.Peer
+	local *coattailtypes.Peer
 }
 
 func newManager() (*Manager, error) {
@@ -50,29 +50,29 @@ func (p *Manager) loadLocalPeer() error {
 		return fmt.Errorf("error loading peers: %s", err)
 	}
 
-	p.local = protocoltypes.NewPeer(
-		protocoltypes.PeerDetails{
-			PeerID: protocoltypes.LocalPeerId,
+	p.local = coattailtypes.NewPeer(
+		coattailtypes.PeerDetails{
+			PeerID: coattailtypes.LocalPeerId,
 		},
 		&LocalPeerAdapter{
-			Units: []protocoltypes.AnyUnit{},
+			Units: []coattailtypes.UnitImpl{},
 			Peers: peers,
 		},
 	)
 	return nil
 }
 
-func (p *Manager) LocalPeer() *protocoltypes.Peer {
+func (p *Manager) LocalPeer() *coattailtypes.Peer {
 	return p.local
 }
 
-func (p *Manager) loadPeers() ([]protocoltypes.PeerDetails, error) {
+func (p *Manager) loadPeers() ([]coattailtypes.PeerDetails, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
-	result := []protocoltypes.PeerDetails{}
+	result := []coattailtypes.PeerDetails{}
 
 	peerDir := filepath.Join(cwd, "peers")
 	if _, err := os.Stat(peerDir); os.IsNotExist(err) {
@@ -85,15 +85,15 @@ func (p *Manager) loadPeers() ([]protocoltypes.PeerDetails, error) {
 	}
 
 	for _, file := range files {
-		if !file.IsDir() && filepath.Ext(file.Name()) == ".json" {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".yaml" {
 			f, err := os.Open(filepath.Join(peerDir, file.Name()))
 			if err != nil {
 				fmt.Printf("error opening peer file %s: %s\n", file.Name(), err)
 				continue
 			}
 
-			peerDetails := protocoltypes.PeerDetails{}
-			err = json.NewDecoder(f).Decode(&peerDetails)
+			peerDetails := coattailtypes.PeerDetails{}
+			err = yaml.NewDecoder(f).Decode(&peerDetails)
 			if err != nil {
 				fmt.Printf("error decoding peer file %s: %s\n", file.Name(), err)
 				continue

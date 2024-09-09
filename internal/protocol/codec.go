@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 type EncodedPacket struct {
@@ -38,7 +38,7 @@ func (e StreamCodec) Read() (EncodedPacket, error) {
 	return p, nil
 }
 
-func (e StreamCodec) Write(callerId uint64, p protocoltypes.Packet) (uint64, error) {
+func (e StreamCodec) Write(callerId uint64, p coattailtypes.Packet) (uint64, error) {
 	packetId := e.id.next()
 	err := e.encoder.Encode(EncodedPacket{
 		ID:           packetId,

@@ -6,4 +6,5 @@ const (
 	AuthenticationServiceKey ContextKey = iota
 	PeerManagerKey
 	LoggerKey
+	DatabaseKey
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 func init() {
@@ -12,38 +12,20 @@ func init() {
 }
 
 type PerformActionPacket struct {
-	Action  string `json:"action"`
-	Arg     any    `json:"arg"`
-	Publish bool   `json:"publish"`
+	Action string `json:"action"`
+	Arg    any    `json:"arg"`
 }
 
-func (h PerformActionPacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
+func (h PerformActionPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
 	mgr := GetManager(ctx)
 
-	res, err := mgr.LocalPeer().RunAction(protocoltypes.RunActionArguments{
-		Name:    h.Action,
-		Arg:     h.Arg,
-		Publish: h.Publish,
-	})
+	res, err := mgr.LocalPeer().RunAction(ctx, h.Action, h.Arg)
 	if err != nil {
 		return nil, err
 	}
 
-	var published bool
-	var publishedError error
-
-	if h.Publish {
-		published = true
-		publishedError = mgr.LocalPeer().PublishActionResult(h.Action, res)
-		if publishedError != nil {
-			published = false
-		}
-	}
-
 	return PerformActionResponsePacket{
-		Action:         h.Action,
-		Data:           res,
-		Published:      published,
-		PublishedError: publishedError,
+		Action:       h.Action,
+		ResponseData: res,
 	}, nil
 }

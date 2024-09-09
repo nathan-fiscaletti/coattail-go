@@ -5,18 +5,20 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
+	"github.com/samber/lo"
 )
 
 /* ====== Type ====== */
 
 type RemotePeerAdapter struct {
-	details protocoltypes.PeerDetails
+	details coattailtypes.PeerDetails
 
 	packetHandler *PacketHandler
 }
 
-func newRemotePeerAdapter(details protocoltypes.PeerDetails) *RemotePeerAdapter {
+func newRemotePeerAdapter(details coattailtypes.PeerDetails) *RemotePeerAdapter {
 	return &RemotePeerAdapter{
 		details: details,
 	}
@@ -39,7 +41,7 @@ func (i *RemotePeerAdapter) getPacketHandler() (*PacketHandler, error) {
 
 /* ====== Actions ====== */
 
-func (i *RemotePeerAdapter) RunAction(arg protocoltypes.RunActionArguments) (any, error) {
+func (i *RemotePeerAdapter) RunAction(ctx context.Context, name string, arg any) (any, error) {
 	ph, err := i.getPacketHandler()
 	if err != nil {
 		return nil, err
@@ -47,9 +49,8 @@ func (i *RemotePeerAdapter) RunAction(arg protocoltypes.RunActionArguments) (any
 
 	packet, err := ph.Request(Request{
 		Packet: PerformActionPacket{
-			Action:  arg.Name,
-			Arg:     arg.Arg,
-			Publish: arg.Publish,
+			Action: name,
+			Arg:    arg,
 		},
 	})
 	if err != nil {
@@ -61,41 +62,88 @@ func (i *RemotePeerAdapter) RunAction(arg protocoltypes.RunActionArguments) (any
 		return nil, fmt.Errorf("unexpected response packet")
 	}
 
-	return respPacket.Data, nil
+	return respPacket.ResponseData, nil
 }
 
-func (i *RemotePeerAdapter) PublishActionResult(name string, data any) error {
+func (i *RemotePeerAdapter) Publish(ctx context.Context, name string, data any) error {
 	return nil
 }
 
-func (i *RemotePeerAdapter) Actions() []protocoltypes.Action {
-	return []protocoltypes.Action{}
+func (i *RemotePeerAdapter) Actions(ctx context.Context) ([]string, error) {
+	ph, err := i.getPacketHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	packet, err := ph.Request(Request{
+		Packet: ListUnitsPacket{
+			Type: coattailtypes.UnitTypeAction,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	respPacket, isRespPacket := packet.(ListUnitsResponsePacket)
+	if !isRespPacket {
+		return nil, fmt.Errorf("unexpected response packet")
+	}
+
+	return respPacket.Values, nil
 }
 
-func (i *RemotePeerAdapter) HasAction(name string) bool {
-	// TODO: implement
-	return false
+func (i *RemotePeerAdapter) HasAction(ctx context.Context, name string) (bool, error) {
+	actions, err := i.Actions(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return lo.Contains(actions, name), nil
 }
 
-func (i *RemotePeerAdapter) AddAction(name string, unit protocoltypes.Unit) error {
+func (i *RemotePeerAdapter) AddAction(ctx context.Context, name string, unit coattailtypes.Unit) error {
 	return fmt.Errorf("cannot add action to remote peer")
 }
 
 /* ====== Receivers ====== */
 
-func (i *RemotePeerAdapter) Receivers() []protocoltypes.Receiver {
-	return []protocoltypes.Receiver{}
+func (i *RemotePeerAdapter) Receivers(ctx context.Context) ([]string, error) {
+	ph, err := i.getPacketHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	packet, err := ph.Request(Request{
+		Packet: ListUnitsPacket{
+			Type: coattailtypes.UnitTypeReceiver,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	respPacket, isRespPacket := packet.(ListUnitsResponsePacket)
+	if !isRespPacket {
+		return nil, fmt.Errorf("unexpected response packet")
+	}
+
+	return respPacket.Values, nil
 }
 
-func (i *RemotePeerAdapter) HasReceiver(name string) bool {
-	return false
+func (i *RemotePeerAdapter) HasReceiver(ctx context.Context, name string) (bool, error) {
+	receivers, err := i.Receivers(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return lo.Contains(receivers, name), nil
 }
 
-func (i *RemotePeerAdapter) AddReceiver(name string, unit protocoltypes.Unit) error {
+func (i *RemotePeerAdapter) AddReceiver(ctx context.Context, name string, unit coattailtypes.Unit) error {
 	return fmt.Errorf("cannot add receiver to remote peer")
 }
 
-func (i *RemotePeerAdapter) NotifyReceiver(name string, arg any) error {
+func (i *RemotePeerAdapter) NotifyReceiver(ctx context.Context, name string, arg any) error {
 	ph, err := i.getPacketHandler()
 	if err != nil {
 		return err
@@ -111,14 +159,27 @@ func (i *RemotePeerAdapter) NotifyReceiver(name string, arg any) error {
 
 /* ====== Peers ====== */
 
-func (i *RemotePeerAdapter) GetPeer(id string) (*protocoltypes.Peer, error) {
+func (i *RemotePeerAdapter) GetPeer(ctx context.Context, id string) (*coattailtypes.Peer, error) {
 	return nil, nil
 }
 
-func (i *RemotePeerAdapter) HasPeer(id string) (bool, error) {
+func (i *RemotePeerAdapter) HasPeer(ctx context.Context, id string) (bool, error) {
 	return false, nil
 }
 
-func (i *RemotePeerAdapter) ListPeers() ([]*protocoltypes.Peer, error) {
-	return []*protocoltypes.Peer{}, nil
+func (i *RemotePeerAdapter) ListPeers(ctx context.Context) ([]*coattailtypes.Peer, error) {
+	return []*coattailtypes.Peer{}, nil
+}
+
+func (i *RemotePeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Subscription) error {
+	ph, err := i.getPacketHandler()
+	if err != nil {
+		return err
+	}
+
+	return ph.Send(SubscribePacket{
+		SubscriberID: sub.SubscriberID,
+		Action:       sub.Action,
+		Receiver:     sub.Receiver,
+	})
 }

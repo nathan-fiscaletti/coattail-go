@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 func init() {
@@ -16,8 +16,8 @@ type NotifyReceiverPacket struct {
 	Data     interface{}
 }
 
-func (n NotifyReceiverPacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
+func (n NotifyReceiverPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
 	mgr := GetManager(ctx)
 	return nil, mgr.LocalPeer().
-		NotifyReceiver(n.Receiver, n.Data)
+		NotifyReceiver(ctx, n.Receiver, n.Data)
 }

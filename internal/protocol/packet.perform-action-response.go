@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 func init() {
@@ -12,12 +12,10 @@ func init() {
 }
 
 type PerformActionResponsePacket struct {
-	Action         string `json:"action"`
-	Data           any    `json:"data"`
-	Published      bool   `json:"published"`
-	PublishedError error  `json:"published_error"`
+	Action       string `json:"action"`
+	ResponseData any    `json:"data"`
 }
 
-func (h PerformActionResponsePacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
+func (h PerformActionResponsePacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
 	return nil, nil
 }

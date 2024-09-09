@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 // MaxBufferedOperations is the maximum number of operations that can be buffered
@@ -77,7 +77,7 @@ func (c *PacketHandler) IsConnected() bool {
 // Send sends a packet to the remote peer and returns an error if the packet
 // could not be sent. If the remote peer response with a packet, it will be
 // automatically handled.
-func (c *PacketHandler) Send(packet protocoltypes.Packet) error {
+func (c *PacketHandler) Send(packet coattailtypes.Packet) error {
 	// Create a new error channel used to return the result of the operation
 	errChan := make(chan error)
 
@@ -99,7 +99,7 @@ func (c *PacketHandler) Send(packet protocoltypes.Packet) error {
 // PacketHandler when it was created.
 type Request struct {
 	// Packet to send to the remote peer
-	Packet protocoltypes.Packet
+	Packet coattailtypes.Packet
 	// ResponseTimeout is the amount of time to wait for a response from the
 	// remote peer. If the response is not received within this time, an error
 	// will be returned. Defaults to 10 seconds.
@@ -112,7 +112,7 @@ type Request struct {
 // handled. You must call the Handle method on the response packet to handle it.
 // The context passed to the Handle method will be the same context that was
 // passed to the PacketHandler when it was created.
-func (c *PacketHandler) Request(request Request) (protocoltypes.Packet, error) {
+func (c *PacketHandler) Request(request Request) (coattailtypes.Packet, error) {
 	errChan := make(chan error)
 	respChan := make(chan any)
 	idChan := make(chan uint64)
@@ -141,7 +141,7 @@ func (c *PacketHandler) Request(request Request) (protocoltypes.Packet, error) {
 		responseHandlers.Delete(id)
 		return nil, fmt.Errorf("timeout waiting for response")
 	case resp := <-respChan:
-		return resp.(protocoltypes.Packet), nil
+		return resp.(coattailtypes.Packet), nil
 	}
 }
 
@@ -149,7 +149,7 @@ var responseHandlers = sync.Map{}
 
 type outputOperation struct {
 	callerId uint64
-	packet   protocoltypes.Packet
+	packet   coattailtypes.Packet
 	idChan   chan uint64
 	errChan  chan error
 	respChan chan any
@@ -157,7 +157,7 @@ type outputOperation struct {
 
 type response struct {
 	CallerID uint64
-	Packet   protocoltypes.Packet
+	Packet   coattailtypes.Packet
 }
 
 // respond sends a packet to the remote peer in response to a packet that was
@@ -258,7 +258,7 @@ func (c *PacketHandler) startInput() {
 			}
 
 			// Handle the packet.
-			resp, err := packet.Data.(protocoltypes.Packet).Handle(c.ctx)
+			resp, err := packet.Data.(coattailtypes.Packet).Handle(c.ctx)
 			if err != nil {
 				logger.Printf("Error executing packet: %s\n", err)
 			}

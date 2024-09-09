@@ -1,4 +1,4 @@
-package protocoltypes
+package coattailtypes
 
 // Unit is an interface that defines a unit of work that can be executed.
 type Unit interface {
@@ -30,7 +30,7 @@ const (
 	UnitTypeReceiver
 )
 
-type AnyUnit struct {
+type UnitImpl struct {
 	Unit
 
 	Name     string

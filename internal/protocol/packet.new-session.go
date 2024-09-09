@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/gob"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 func init() {
@@ -16,7 +16,7 @@ type NewSessionPacket struct {
 	AuthenticationToken string `json:"authentication_token"`
 }
 
-func (h NewSessionPacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
+func (h NewSessionPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
 	authService := authentication.GetService(ctx)
 
 	res := authService.Authenticate(h.AuthenticationToken)

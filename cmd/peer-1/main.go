@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattail"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 	}
 
 	// Add an action to the local peer.
-	err = local.AddAction("test", coattail.NewUnit(func(arg any) (any, error) {
+	err = local.AddAction(ctx, "test", coattailtypes.NewUnit(func(arg any) (any, error) {
 		return "Hello, World!", nil
 	}))
 	if err != nil {

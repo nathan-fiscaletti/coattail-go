@@ -5,7 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol/protocoltypes"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 func init() {
@@ -16,7 +16,7 @@ type HelloPacket struct {
 	Message string `json:"message"`
 }
 
-func (h HelloPacket) Handle(ctx context.Context) (protocoltypes.Packet, error) {
+func (h HelloPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
 	fmt.Printf("handle(Hello): %s\n", h.Message)
 	return GoodbyePacket{
 		Message: "Goodbye, I am the second functional packet!",

@@ -1,4 +1,4 @@
-package protocoltypes
+package coattailtypes
 
 type Action struct {
 	Unit
