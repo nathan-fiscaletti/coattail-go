@@ -1,25 +1,26 @@
 package coattailmodels
 
 import (
-	"github.com/google/uuid"
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
 type Subscription struct {
 	gorm.Model
-	ID uuid.UUID
-
-	// TODO: Subscriber ID transmission / identification
-	// SubscriberID represents the ID of the peer that
-	// is subscribed to the action.
-	SubscriberID uuid.UUID
+	// The Address to notify when the action is published.
+	Address string `json:"address"`
 
 	// Action represents the action on the local instance
 	// that the subscriber is subscribed to.
-	Action string
+	Action string `json:"action"`
 
 	// Receiver represents the receiver on the remote
 	// instance that will be notified when the action
 	// is published.
-	Receiver string
+	Receiver string `json:"receiver"`
+}
+
+func (s Subscription) String() string {
+	return fmt.Sprintf("%s -> %s//%s", s.Action, s.Address, s.Receiver)
 }

@@ -23,6 +23,7 @@ func Init() (context.Context, error) {
 		return nil, err
 	}
 
+	// Initialize the peer manager
 	ctx, err = protocol.ContextWithManager(ctx)
 	if err != nil {
 		return nil, err
@@ -32,8 +33,8 @@ func Init() (context.Context, error) {
 }
 
 // Run starts the local peer. This function will block.
-func Run(ctx context.Context) error {
-	return host.Run(ctx)
+func Run(ctx context.Context, after func()) error {
+	return host.Run(ctx, after)
 }
 
 // Manage returns the local peer.

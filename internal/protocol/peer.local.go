@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/database"
+	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 	"github.com/samber/lo"
@@ -47,7 +48,9 @@ func (i *LocalPeerAdapter) runUnit(arg runUnitArguments) (any, error) {
 
 /* ====== Actions ====== */
 
-func (i *LocalPeerAdapter) RunAction(ctx context.Context, name string, arg any) (any, error) {
+func (i *LocalPeerAdapter) Run(ctx context.Context, name string, arg any) (any, error) {
+	logging.GetLogger(ctx).Printf("running action: %s", name)
+
 	return i.runUnit(runUnitArguments{
 		Type: coattailtypes.UnitTypeAction,
 		Name: name,
@@ -56,32 +59,58 @@ func (i *LocalPeerAdapter) RunAction(ctx context.Context, name string, arg any) 
 }
 
 func (i *LocalPeerAdapter) Publish(ctx context.Context, name string, data any) error {
+	logging.GetLogger(ctx).Printf("publishing action: %s", name)
+
 	db, err := database.GetDatabase(ctx)
 	if err != nil {
 		return err
 	}
 
+	var action *coattailtypes.UnitImpl
+
 	for _, unit := range i.Units {
 		if unit.UnitType == coattailtypes.UnitTypeAction && unit.Name == name {
-			var subscriptions []coattailmodels.Subscription
-			if err := db.Where("action = ?", name).Find(&subscriptions).Error; err != nil {
-				return err
-			}
+			action = &unit
+			break
+		}
+	}
 
-			for _, sub := range subscriptions {
-				peer, err := i.GetPeer(ctx, sub.SubscriberID.String())
-				if err != nil {
-					return err
-				}
+	if action == nil {
+		return fmt.Errorf("action %s not found", name)
+	}
 
-				if err := peer.NotifyReceiver(ctx, sub.Receiver, data); err != nil {
-					return err
-				}
-			}
+	var subscriptions []coattailmodels.Subscription
+	if err := db.Where("action = ?", action.Name).Find(&subscriptions).Error; err != nil {
+		return err
+	}
+
+	for _, sub := range subscriptions {
+		peer, err := i.GetPeerBy(ctx, func(details coattailtypes.PeerDetails) bool {
+			return details.Address == sub.Address
+		})
+		if err != nil {
+			return err
+		}
+
+		if err := peer.Notify(ctx, sub.Receiver, data); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func (i *LocalPeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) (any, error) {
+	res, err := i.Run(ctx, name, arg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := i.Publish(ctx, name, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (i *LocalPeerAdapter) Actions(ctx context.Context) ([]string, error) {
@@ -144,7 +173,9 @@ func (i *LocalPeerAdapter) AddReceiver(ctx context.Context, name string, unit co
 	return nil
 }
 
-func (i *LocalPeerAdapter) NotifyReceiver(ctx context.Context, name string, arg any) error {
+func (i *LocalPeerAdapter) Notify(ctx context.Context, name string, arg any) error {
+	logging.GetLogger(ctx).Printf("notifying receiver: %s", name)
+
 	_, err := i.runUnit(runUnitArguments{
 		Type: coattailtypes.UnitTypeReceiver,
 		Name: name,
@@ -166,6 +197,16 @@ func (i *LocalPeerAdapter) GetPeer(ctx context.Context, id string) (*coattailtyp
 	return nil, fmt.Errorf("peer %s not found", id)
 }
 
+func (i *LocalPeerAdapter) GetPeerBy(ctx context.Context, predicate func(coattailtypes.PeerDetails) bool) (*coattailtypes.Peer, error) {
+	for _, peerDetails := range i.Peers {
+		if predicate(peerDetails) {
+			return coattailtypes.NewPeer(peerDetails, newRemotePeerAdapter(peerDetails)), nil
+		}
+	}
+
+	return nil, fmt.Errorf("peer not found")
+}
+
 func (i *LocalPeerAdapter) HasPeer(ctx context.Context, id string) (bool, error) {
 	return lo.ContainsBy(i.Peers, func(peerDetails coattailtypes.PeerDetails) bool {
 		return peerDetails.PeerID == id
@@ -184,5 +225,10 @@ func (i *LocalPeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Sub
 		return err
 	}
 
+	if db.Find(&sub).RowsAffected > 0 {
+		return nil
+	}
+
+	logging.GetLogger(ctx).Printf("registering subscriber: %s", sub.String())
 	return db.Create(&sub).Error
 }

@@ -52,17 +52,23 @@ type PeerAdapter interface {
 }
 
 type ActionManager interface {
-	// RunAction runs an action on the peer. The name of the action should be
+	// Run runs an action on the peer. The name of the action should be
 	// provided as the first argument. The second argument is the data that
 	// should be passed to the action. The return value is the result of the
 	// action, or an error if the action failed.
-	RunAction(ctx context.Context, name string, arg any) (any, error)
+	Run(ctx context.Context, name string, arg any) (any, error)
 
 	// Publish publishes data to the peer. The name of the action that produced
 	// the data should be provided as the first argument. The second argument
 	// is the data that should be published. The return value is an error if
 	// the publish failed.
 	Publish(ctx context.Context, name string, data any) error
+
+	// RunAndPublish runs an action on the peer and then publishes the result.
+	// The name of the action should be provided as the first argument. The second
+	// argument is the data that should be passed to the action. The return value
+	// is the result of the action, or an error if the action failed.
+	RunAndPublish(ctx context.Context, name string, arg any) (any, error)
 
 	// Actions returns a list of all actions that are available on the peer.
 	// The return value is a list of action names, or an error if the list could
@@ -86,20 +92,23 @@ type ReceiverManager interface {
 	// The return value is a list of receiver names, or an error if the list could
 	// not be retrieved.
 	Receivers(ctx context.Context) ([]string, error)
+
 	// HasReceiver checks if a receiver is available on the peer. The name of the
 	// receiver should be provided as the first argument. The return value is
 	// true if the receiver is available, or false if it is not.
 	HasReceiver(ctx context.Context, name string) (bool, error)
+
 	// AddReceiver adds a receiver to the peer. The name of the receiver should be
 	// provided as the first argument. The second argument is the unit that should
 	// be executed when the receiver is notified. The return value is an error if
 	// the receiver could not be added.
 	AddReceiver(ctx context.Context, name string, unit Unit) error
-	// NotifyReceiver notifies a receiver on the peer. The name of the receiver
+
+	// Notify notifies a receiver on the peer. The name of the receiver
 	// should be provided as the first argument. The second argument is the data
 	// that should be passed to the receiver. The return value is an error if the
 	// notification could not be sent.
-	NotifyReceiver(ctx context.Context, name string, arg any) error
+	Notify(ctx context.Context, name string, arg any) error
 }
 
 type PeerManager interface {
@@ -107,10 +116,17 @@ type PeerManager interface {
 	// the first argument. The return value is the peer, or an error if the peer
 	// could not be found.
 	GetPeer(ctx context.Context, id string) (*Peer, error)
+
+	// GetPeerBy returns a peer by a predicate. The predicate should be provided
+	// as the first argument. The return value is the peer, or an error if the peer
+	// could not be found.
+	GetPeerBy(ctx context.Context, predicate func(PeerDetails) bool) (*Peer, error)
+
 	// HasPeer checks if a peer is available on the peer. The ID of the peer should
 	// be provided as the first argument. The return value is true if the peer is
 	// available, or false if it is not.
 	HasPeer(ctx context.Context, id string) (bool, error)
+
 	// ListPeers returns a list of all peers that are available on the peer. The
 	// return value is a list of peers, or an error if the list could not be
 	// retrieved.

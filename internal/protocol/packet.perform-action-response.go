@@ -12,8 +12,9 @@ func init() {
 }
 
 type PerformActionResponsePacket struct {
-	Action       string `json:"action"`
-	ResponseData any    `json:"data"`
+	Action               string `json:"action"`
+	ResponseData         any    `json:"data"`
+	TriggeredPublication bool   `json:"published"`
 }
 
 func (h PerformActionResponsePacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {

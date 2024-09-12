@@ -3,10 +3,10 @@ version: "3"
 tasks:
   run:
     desc: Run the local peer
-    cmd: go run ../cmd/peer-1
-    dir: demo
+    cmd: go run ./cmd
+    dir: demo/ct1
   
   run-remote:
     desc: Run the remote peer
-    cmd: go run ../cmd/peer-2
-    dir: demo
+    cmd: go run ./cmd
+    dir: demo/ct2

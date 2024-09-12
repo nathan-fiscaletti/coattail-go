@@ -27,7 +27,7 @@ func main() {
 	}
 
 	// Start the local peer
-	err = coattail.Run(ctx)
+	err = coattail.Run(ctx, nil)
 	if err != nil {
 		panic(err)
 	}

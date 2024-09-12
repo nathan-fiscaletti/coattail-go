@@ -41,7 +41,7 @@ func (i *RemotePeerAdapter) getPacketHandler() (*PacketHandler, error) {
 
 /* ====== Actions ====== */
 
-func (i *RemotePeerAdapter) RunAction(ctx context.Context, name string, arg any) (any, error) {
+func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any, error) {
 	ph, err := i.getPacketHandler()
 	if err != nil {
 		return nil, err
@@ -49,8 +49,9 @@ func (i *RemotePeerAdapter) RunAction(ctx context.Context, name string, arg any)
 
 	packet, err := ph.Request(Request{
 		Packet: PerformActionPacket{
-			Action: name,
-			Arg:    arg,
+			Action:  name,
+			Arg:     arg,
+			Publish: false,
 		},
 	})
 	if err != nil {
@@ -67,6 +68,31 @@ func (i *RemotePeerAdapter) RunAction(ctx context.Context, name string, arg any)
 
 func (i *RemotePeerAdapter) Publish(ctx context.Context, name string, data any) error {
 	return nil
+}
+
+func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) (any, error) {
+	ph, err := i.getPacketHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	packet, err := ph.Request(Request{
+		Packet: PerformActionPacket{
+			Action:  name,
+			Arg:     arg,
+			Publish: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	respPacket, isRespPacket := packet.(PerformActionResponsePacket)
+	if !isRespPacket {
+		return nil, fmt.Errorf("unexpected response packet")
+	}
+
+	return respPacket.ResponseData, nil
 }
 
 func (i *RemotePeerAdapter) Actions(ctx context.Context) ([]string, error) {
@@ -143,7 +169,7 @@ func (i *RemotePeerAdapter) AddReceiver(ctx context.Context, name string, unit c
 	return fmt.Errorf("cannot add receiver to remote peer")
 }
 
-func (i *RemotePeerAdapter) NotifyReceiver(ctx context.Context, name string, arg any) error {
+func (i *RemotePeerAdapter) Notify(ctx context.Context, name string, arg any) error {
 	ph, err := i.getPacketHandler()
 	if err != nil {
 		return err
@@ -160,7 +186,11 @@ func (i *RemotePeerAdapter) NotifyReceiver(ctx context.Context, name string, arg
 /* ====== Peers ====== */
 
 func (i *RemotePeerAdapter) GetPeer(ctx context.Context, id string) (*coattailtypes.Peer, error) {
-	return nil, nil
+	return nil, fmt.Errorf("cannot get peer on remote peer")
+}
+
+func (i *RemotePeerAdapter) GetPeerBy(ctx context.Context, predicate func(coattailtypes.PeerDetails) bool) (*coattailtypes.Peer, error) {
+	return nil, fmt.Errorf("cannot get peer by predicate on remote peer")
 }
 
 func (i *RemotePeerAdapter) HasPeer(ctx context.Context, id string) (bool, error) {
@@ -177,9 +207,17 @@ func (i *RemotePeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Su
 		return err
 	}
 
-	return ph.Send(SubscribePacket{
-		SubscriberID: sub.SubscriberID,
-		Action:       sub.Action,
-		Receiver:     sub.Receiver,
+	// Should use Request here to block until the subscription is complete
+	_, err = ph.Request(Request{
+		Packet: SubscribePacket{
+			Address:  sub.Address,
+			Action:   sub.Action,
+			Receiver: sub.Receiver,
+		},
 	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/host/config"
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 	"gopkg.in/yaml.v3"
@@ -50,9 +51,15 @@ func (p *Manager) loadLocalPeer() error {
 		return fmt.Errorf("error loading peers: %s", err)
 	}
 
+	hostConfig, err := config.GetHostConfig()
+	if err != nil {
+		return fmt.Errorf("error getting host: %s", err)
+	}
+
 	p.local = coattailtypes.NewPeer(
 		coattailtypes.PeerDetails{
-			PeerID: coattailtypes.LocalPeerId,
+			PeerID:  coattailtypes.LocalPeerId,
+			Address: hostConfig.ServiceAddress,
 		},
 		&LocalPeerAdapter{
 			Units: []coattailtypes.UnitImpl{},
