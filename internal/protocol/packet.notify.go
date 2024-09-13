@@ -8,15 +8,15 @@ import (
 )
 
 func init() {
-	gob.Register(NotifyReceiverPacket{})
+	gob.Register(NotifyPacket{})
 }
 
-type NotifyReceiverPacket struct {
+type NotifyPacket struct {
 	Receiver string `json:"receiver"`
 	Data     interface{}
 }
 
-func (n NotifyReceiverPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
+func (n NotifyPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
 	mgr := GetManager(ctx)
 	return nil, mgr.LocalPeer().
 		Notify(ctx, n.Receiver, n.Data)

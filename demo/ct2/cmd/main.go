@@ -37,7 +37,7 @@ func main() {
 	}
 
 	// Retrieve the remote peer
-	remote, err := local.GetPeer(ctx, "ct1")
+	remote, err := local.GetPeer(ctx, "127.0.0.1:5243")
 	if err != nil {
 		panic(err)
 	}

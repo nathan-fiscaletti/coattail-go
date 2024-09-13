@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 
@@ -11,6 +12,10 @@ import (
 )
 
 /* ====== Type ====== */
+
+var (
+	ErrAccessDenied = errors.New("access denied")
+)
 
 type RemotePeerAdapter struct {
 	details coattailtypes.PeerDetails
@@ -48,17 +53,17 @@ func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any,
 	}
 
 	packet, err := ph.Request(Request{
-		Packet: PerformActionPacket{
-			Action:  name,
-			Arg:     arg,
-			Publish: false,
+		Packet: ActionPacket{
+			Type:   ActionPacketTypePerform,
+			Action: name,
+			Arg:    arg,
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	respPacket, isRespPacket := packet.(PerformActionResponsePacket)
+	respPacket, isRespPacket := packet.(ActionResponsePacket)
 	if !isRespPacket {
 		return nil, fmt.Errorf("unexpected response packet")
 	}
@@ -67,7 +72,21 @@ func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any,
 }
 
 func (i *RemotePeerAdapter) Publish(ctx context.Context, name string, data any) error {
-	return nil
+	ph, err := i.getPacketHandler()
+	if err != nil {
+		return err
+	}
+
+	// Run as a request to block until the publish is complete
+	_, err = ph.Request(Request{
+		Packet: ActionPacket{
+			Type:   ActionPacketTypePublish,
+			Action: name,
+			Arg:    data,
+		},
+	})
+
+	return err
 }
 
 func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) (any, error) {
@@ -77,17 +96,17 @@ func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg 
 	}
 
 	packet, err := ph.Request(Request{
-		Packet: PerformActionPacket{
-			Action:  name,
-			Arg:     arg,
-			Publish: true,
+		Packet: ActionPacket{
+			Type:   ActionPacketTypePerformAndPublish,
+			Action: name,
+			Arg:    arg,
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	respPacket, isRespPacket := packet.(PerformActionResponsePacket)
+	respPacket, isRespPacket := packet.(ActionResponsePacket)
 	if !isRespPacket {
 		return nil, fmt.Errorf("unexpected response packet")
 	}
@@ -175,7 +194,7 @@ func (i *RemotePeerAdapter) Notify(ctx context.Context, name string, arg any) er
 		return err
 	}
 
-	err = ph.Send(NotifyReceiverPacket{
+	err = ph.Send(NotifyPacket{
 		Receiver: name,
 		Data:     arg,
 	})
@@ -186,19 +205,19 @@ func (i *RemotePeerAdapter) Notify(ctx context.Context, name string, arg any) er
 /* ====== Peers ====== */
 
 func (i *RemotePeerAdapter) GetPeer(ctx context.Context, id string) (*coattailtypes.Peer, error) {
-	return nil, fmt.Errorf("cannot get peer on remote peer")
+	return nil, ErrAccessDenied
 }
 
 func (i *RemotePeerAdapter) GetPeerBy(ctx context.Context, predicate func(coattailtypes.PeerDetails) bool) (*coattailtypes.Peer, error) {
-	return nil, fmt.Errorf("cannot get peer by predicate on remote peer")
+	return nil, ErrAccessDenied
 }
 
 func (i *RemotePeerAdapter) HasPeer(ctx context.Context, id string) (bool, error) {
-	return false, nil
+	return false, ErrAccessDenied
 }
 
 func (i *RemotePeerAdapter) ListPeers(ctx context.Context) ([]*coattailtypes.Peer, error) {
-	return []*coattailtypes.Peer{}, nil
+	return nil, ErrAccessDenied
 }
 
 func (i *RemotePeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Subscription) error {

@@ -58,7 +58,7 @@ func (p *Manager) loadLocalPeer() error {
 
 	p.local = coattailtypes.NewPeer(
 		coattailtypes.PeerDetails{
-			PeerID:  coattailtypes.LocalPeerId,
+			IsLocal: true,
 			Address: hostConfig.ServiceAddress,
 		},
 		&LocalPeerAdapter{

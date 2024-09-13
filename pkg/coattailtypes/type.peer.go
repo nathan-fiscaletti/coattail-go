@@ -6,17 +6,10 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 )
 
-const (
-	// LocalPeerId is the ID of the local peer. This is a unique identifier for
-	// the local peer.
-	LocalPeerId string = "local"
-)
-
 type PeerDetails struct {
-	// The ID of the peer. This is a unique identifier for the peer. For the
-	// local peer, this should contain LocalPeerId. For remote peers, this is
-	// the ID that was assigned to the peer when it was registered.
-	PeerID string `yaml:"id"`
+	// Whether or not the peer is local. This should be true if the peer is the
+	// local peer, and false if the peer is a remote peer.
+	IsLocal bool `yaml:"is_local"`
 
 	// The address of the peer. This is the address that the peer can be reached
 	// at. For the local peer, this should be the address of the local machine.

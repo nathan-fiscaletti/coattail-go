@@ -187,14 +187,14 @@ func (i *LocalPeerAdapter) Notify(ctx context.Context, name string, arg any) err
 
 /* ====== Peers ====== */
 
-func (i *LocalPeerAdapter) GetPeer(ctx context.Context, id string) (*coattailtypes.Peer, error) {
+func (i *LocalPeerAdapter) GetPeer(ctx context.Context, address string) (*coattailtypes.Peer, error) {
 	for _, peerDetails := range i.Peers {
-		if peerDetails.PeerID == id {
+		if peerDetails.Address == address {
 			return coattailtypes.NewPeer(peerDetails, newRemotePeerAdapter(peerDetails)), nil
 		}
 	}
 
-	return nil, fmt.Errorf("peer %s not found", id)
+	return nil, fmt.Errorf("peer %s not found", address)
 }
 
 func (i *LocalPeerAdapter) GetPeerBy(ctx context.Context, predicate func(coattailtypes.PeerDetails) bool) (*coattailtypes.Peer, error) {
@@ -207,9 +207,9 @@ func (i *LocalPeerAdapter) GetPeerBy(ctx context.Context, predicate func(coattai
 	return nil, fmt.Errorf("peer not found")
 }
 
-func (i *LocalPeerAdapter) HasPeer(ctx context.Context, id string) (bool, error) {
+func (i *LocalPeerAdapter) HasPeer(ctx context.Context, address string) (bool, error) {
 	return lo.ContainsBy(i.Peers, func(peerDetails coattailtypes.PeerDetails) bool {
-		return peerDetails.PeerID == id
+		return peerDetails.Address == address
 	}), nil
 }
 

@@ -38,11 +38,11 @@ func Run(ctx context.Context, after func()) error {
 }
 
 // Manage returns the local peer.
-func Manage(ctx context.Context) (*coattailtypes.Peer, error) {
+func Manage(ctx context.Context) *coattailtypes.Peer {
 	mgr := protocol.GetManager(ctx)
 	if mgr == nil {
-		return nil, fmt.Errorf("no peer manager found in context")
+		panic(fmt.Errorf("no peer manager found in context"))
 	}
 
-	return mgr.LocalPeer(), nil
+	return mgr.LocalPeer()
 }
