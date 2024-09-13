@@ -14,12 +14,9 @@ func main() {
 	}
 
 	// Retrieve the local peer
-	local, err := coattail.Manage(ctx)
-	if err != nil {
-		panic(err)
-	}
+	local := coattail.Manage(ctx)
 
-	err = local.AddReceiver(ctx, "testReceiver", coattailtypes.NewUnit(func(arg any) (any, error) {
+	if err := local.AddReceiver(ctx, "testReceiver", coattailtypes.NewUnit(func(arg any) (any, error) {
 		if arg != nil {
 			if argStr, ok := arg.(string); ok {
 				println(argStr)
@@ -31,18 +28,17 @@ func main() {
 		}
 
 		return nil, nil
-	}))
-	if err != nil {
+	})); err != nil {
 		panic(err)
 	}
 
-	// Retrieve the remote peer
-	remote, err := local.GetPeer(ctx, "127.0.0.1:5243")
-	if err != nil {
-		panic(err)
-	}
+	if err := coattail.Run(ctx, func() {
+		// Retrieve the remote peer
+		remote, err := local.GetPeer(ctx, "127.0.0.1:5243")
+		if err != nil {
+			panic(err)
+		}
 
-	err = coattail.Run(ctx, func() {
 		// Subscribe to the "test" action on the remote peer
 		// with the "testReceiver" receiver registered.
 		err = remote.Subscribe(ctx, coattailmodels.Subscription{
@@ -59,8 +55,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-	})
-	if err != nil {
+	}); err != nil {
 		panic(err)
 	}
 }
