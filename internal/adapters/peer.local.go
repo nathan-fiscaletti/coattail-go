@@ -15,6 +15,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+/* ====== Local Peer Initialization ====== */
+
 func InitLocalPeer(host *host.Host) error {
 	peers, err := loadPeers()
 	if err != nil {
