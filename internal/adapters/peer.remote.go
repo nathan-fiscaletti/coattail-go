@@ -147,7 +147,7 @@ func (i *RemotePeerAdapter) HasAction(ctx context.Context, name string) (bool, e
 	return lo.Contains(actions, name), nil
 }
 
-func (i *RemotePeerAdapter) AddAction(ctx context.Context, name string, unit coattailtypes.Unit) error {
+func (i *RemotePeerAdapter) RegisterAction(ctx context.Context, name string, unit coattailtypes.Unit) error {
 	return fmt.Errorf("cannot add action to remote peer")
 }
 
@@ -185,7 +185,7 @@ func (i *RemotePeerAdapter) HasReceiver(ctx context.Context, name string) (bool,
 	return lo.Contains(receivers, name), nil
 }
 
-func (i *RemotePeerAdapter) AddReceiver(ctx context.Context, name string, unit coattailtypes.Unit) error {
+func (i *RemotePeerAdapter) RegisterReceiver(ctx context.Context, name string, unit coattailtypes.Unit) error {
 	return fmt.Errorf("cannot add receiver to remote peer")
 }
 

@@ -183,7 +183,7 @@ func (i *LocalPeerAdapter) HasAction(ctx context.Context, name string) (bool, er
 	}), nil
 }
 
-func (i *LocalPeerAdapter) AddAction(ctx context.Context, name string, unit coattailtypes.Unit) error {
+func (i *LocalPeerAdapter) RegisterAction(ctx context.Context, name string, unit coattailtypes.Unit) error {
 	exists, _ := i.HasAction(ctx, name)
 	if exists {
 		return fmt.Errorf("action %s already exists", name)
@@ -194,6 +194,8 @@ func (i *LocalPeerAdapter) AddAction(ctx context.Context, name string, unit coat
 		Name:     name,
 		UnitType: coattailtypes.UnitTypeAction,
 	})
+
+	logging.GetLogger(ctx).Printf("registered action '%s' at %p", name, &unit)
 
 	return nil
 }
@@ -214,7 +216,7 @@ func (i *LocalPeerAdapter) HasReceiver(ctx context.Context, name string) (bool, 
 	}), nil
 }
 
-func (i *LocalPeerAdapter) AddReceiver(ctx context.Context, name string, unit coattailtypes.Unit) error {
+func (i *LocalPeerAdapter) RegisterReceiver(ctx context.Context, name string, unit coattailtypes.Unit) error {
 	exists, _ := i.HasReceiver(ctx, name)
 	if exists {
 		return fmt.Errorf("receiver %s already exists", name)
@@ -225,6 +227,8 @@ func (i *LocalPeerAdapter) AddReceiver(ctx context.Context, name string, unit co
 		Name:     name,
 		UnitType: coattailtypes.UnitTypeReceiver,
 	})
+
+	logging.GetLogger(ctx).Printf("registered receiver '%s' at %p", name, &unit)
 
 	return nil
 }

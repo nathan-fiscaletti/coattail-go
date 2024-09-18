@@ -7,22 +7,10 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
-type TestReceiver struct{}
-
-func (t *TestReceiver) Execute(arg any) (any, error) {
-	if arg != nil {
-		if argStr, ok := arg.(string); ok {
-			println(argStr)
-		}
-	}
-
-	return nil, nil
-}
-
 type CT2 struct{}
 
 func (c *CT2) OnStart(ctx context.Context, local *coattailtypes.Peer) {
-	if err := local.AddReceiver(ctx, "testReceiver", &TestReceiver{}); err != nil {
+	if err := local.RegisterReceiver(ctx, "testReceiver", NewTestReceiver()); err != nil {
 		panic(err)
 	}
 
