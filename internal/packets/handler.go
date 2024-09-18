@@ -1,4 +1,4 @@
-package protocol
+package packets
 
 import (
 	"context"
@@ -18,8 +18,8 @@ import (
 // will block until an operation is completed.
 const MaxBufferedOperations = 100
 
-// PacketHandler is a handler for incoming and outgoing packets on a connection.
-type PacketHandler struct {
+// Handler is a handler for incoming and outgoing packets on a connection.
+type Handler struct {
 	ctx       context.Context
 	conn      net.Conn
 	codec     *StreamCodec
@@ -28,15 +28,15 @@ type PacketHandler struct {
 	connected bool
 }
 
-// NewPacketHandler creates a new PacketHandler with the provided context and
+// NewHandler creates a new PacketHandler with the provided context and
 // connection. The PacketHandler will handle incoming and outgoing packets on
 // the connection. The context will be used to pass services to the packet
 // handlers.
-func NewPacketHandler(ctx context.Context, conn net.Conn) *PacketHandler {
+func NewHandler(ctx context.Context, conn net.Conn) *Handler {
 	// Initialize services.
 	ctx = authentication.ContextWithService(ctx)
 
-	return &PacketHandler{
+	return &Handler{
 		ctx:   ctx,
 		conn:  conn,
 		codec: NewStreamCodec(conn),
@@ -45,13 +45,13 @@ func NewPacketHandler(ctx context.Context, conn net.Conn) *PacketHandler {
 
 // Context returns the context that was passed to the PacketHandler when it was
 // created.
-func (c *PacketHandler) Context() context.Context {
+func (c *Handler) Context() context.Context {
 	return c.ctx
 }
 
 // HandlePackets starts handling incoming and outgoing packets on the connection.
 // This function will block until the connection is closed.
-func (c *PacketHandler) HandlePackets() {
+func (c *Handler) HandlePackets() {
 	if c.connected {
 		panic("attempted to start handling packets on an already connected PacketHandler")
 	}
@@ -70,14 +70,14 @@ func (c *PacketHandler) HandlePackets() {
 
 // IsConnected returns true if the PacketHandler is currently connected to a
 // remote peer.
-func (c *PacketHandler) IsConnected() bool {
+func (c *Handler) IsConnected() bool {
 	return c.connected
 }
 
 // Send sends a packet to the remote peer and returns an error if the packet
 // could not be sent. If the remote peer response with a packet, it will be
 // automatically handled.
-func (c *PacketHandler) Send(packet coattailtypes.Packet) error {
+func (c *Handler) Send(packet coattailtypes.Packet) error {
 	// Create a new error channel used to return the result of the operation
 	errChan := make(chan error)
 
@@ -112,7 +112,7 @@ type Request struct {
 // handled. You must call the Handle method on the response packet to handle it.
 // The context passed to the Handle method will be the same context that was
 // passed to the PacketHandler when it was created.
-func (c *PacketHandler) Request(request Request) (coattailtypes.Packet, error) {
+func (c *Handler) Request(request Request) (coattailtypes.Packet, error) {
 	errChan := make(chan error)
 	respChan := make(chan any)
 	idChan := make(chan uint64)
@@ -163,7 +163,7 @@ type response struct {
 // respond sends a packet to the remote peer in response to a packet that was
 // received from the remote peer. Returns an error if the packet could not be
 // sent.
-func (c *PacketHandler) respond(resp response) error {
+func (c *Handler) respond(resp response) error {
 	errChan := make(chan error)
 
 	c.output <- outputOperation{
@@ -175,7 +175,7 @@ func (c *PacketHandler) respond(resp response) error {
 	return <-errChan
 }
 
-func (c *PacketHandler) startOutput() {
+func (c *Handler) startOutput() {
 	defer c.wg.Done()
 
 	for {
@@ -202,7 +202,7 @@ func (c *PacketHandler) startOutput() {
 	}
 }
 
-func (c *PacketHandler) startInput() {
+func (c *Handler) startInput() {
 	defer c.wg.Done()
 	defer close(c.output)
 

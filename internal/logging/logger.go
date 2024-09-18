@@ -8,9 +8,8 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 )
 
-var logger = log.New(os.Stdout, "[host] ", log.LstdFlags)
-
-func ContextWithLogger(ctx context.Context) context.Context {
+func ContextWithLogger(ctx context.Context, appName string) context.Context {
+	logger := log.New(os.Stdout, "["+appName+"] ", log.LstdFlags)
 	return context.WithValue(ctx, keys.LoggerKey, logger)
 }
 

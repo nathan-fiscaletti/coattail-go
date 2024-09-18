@@ -1,15 +1,69 @@
-package protocol
+package adapters
 
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/database"
+	"github.com/nathan-fiscaletti/coattail-go/internal/host"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 	"github.com/samber/lo"
+	"gopkg.in/yaml.v3"
 )
+
+func InitLocalPeer(host *host.Host) error {
+	peers, err := loadPeers()
+	if err != nil {
+		return fmt.Errorf("error loading peers: %s", err)
+	}
+
+	host.LocalPeer = coattailtypes.NewPeer(
+		coattailtypes.PeerDetails{
+			IsLocal: true,
+			Address: host.Config.ServiceAddress,
+		},
+		&LocalPeerAdapter{
+			Units: []coattailtypes.UnitImpl{},
+			Peers: peers,
+		},
+	)
+	return nil
+}
+
+func loadPeers() ([]coattailtypes.PeerDetails, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	result := []coattailtypes.PeerDetails{}
+
+	fmt.Printf("cwd: %s\n", cwd)
+
+	peersFile := filepath.Join(cwd, "peers.yaml")
+	if _, err := os.Stat(peersFile); os.IsNotExist(err) {
+		return result, nil
+	}
+
+	f, err := os.Open(peersFile)
+	if err != nil {
+		return nil, err
+	}
+
+	peers := struct {
+		Peers []coattailtypes.PeerDetails `yaml:"peers"`
+	}{}
+	err = yaml.NewDecoder(f).Decode(&peers)
+	if err != nil {
+		return nil, err
+	}
+
+	return peers.Peers, nil
+}
 
 /* ====== Type ====== */
 

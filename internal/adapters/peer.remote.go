@@ -1,4 +1,4 @@
-package protocol
+package adapters
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/packets"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 	"github.com/samber/lo"
@@ -20,7 +21,7 @@ var (
 type RemotePeerAdapter struct {
 	details coattailtypes.PeerDetails
 
-	packetHandler *PacketHandler
+	handler *packets.Handler
 }
 
 func newRemotePeerAdapter(details coattailtypes.PeerDetails) *RemotePeerAdapter {
@@ -29,32 +30,32 @@ func newRemotePeerAdapter(details coattailtypes.PeerDetails) *RemotePeerAdapter 
 	}
 }
 
-func (i *RemotePeerAdapter) getPacketHandler() (*PacketHandler, error) {
-	if i.packetHandler == nil || !i.packetHandler.IsConnected() {
+func (i *RemotePeerAdapter) getHandler() (*packets.Handler, error) {
+	if i.handler == nil || !i.handler.IsConnected() {
 		conn, err := net.Dial("tcp", i.details.Address)
 		if err != nil {
 			return nil, err
 		}
 
 		ctx := context.Background()
-		i.packetHandler = NewPacketHandler(ctx, conn)
-		i.packetHandler.HandlePackets()
+		i.handler = packets.NewHandler(ctx, conn)
+		i.handler.HandlePackets()
 	}
 
-	return i.packetHandler, nil
+	return i.handler, nil
 }
 
 /* ====== Actions ====== */
 
 func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any, error) {
-	ph, err := i.getPacketHandler()
+	ph, err := i.getHandler()
 	if err != nil {
 		return nil, err
 	}
 
-	packet, err := ph.Request(Request{
-		Packet: ActionPacket{
-			Type:   ActionPacketTypePerform,
+	packet, err := ph.Request(packets.Request{
+		Packet: packets.ActionPacket{
+			Type:   packets.ActionPacketTypePerform,
 			Action: name,
 			Arg:    arg,
 		},
@@ -63,7 +64,7 @@ func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any,
 		return nil, err
 	}
 
-	respPacket, isRespPacket := packet.(ActionResponsePacket)
+	respPacket, isRespPacket := packet.(packets.ActionResponsePacket)
 	if !isRespPacket {
 		return nil, fmt.Errorf("unexpected response packet")
 	}
@@ -72,15 +73,15 @@ func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any,
 }
 
 func (i *RemotePeerAdapter) Publish(ctx context.Context, name string, data any) error {
-	ph, err := i.getPacketHandler()
+	ph, err := i.getHandler()
 	if err != nil {
 		return err
 	}
 
 	// Run as a request to block until the publish is complete
-	_, err = ph.Request(Request{
-		Packet: ActionPacket{
-			Type:   ActionPacketTypePublish,
+	_, err = ph.Request(packets.Request{
+		Packet: packets.ActionPacket{
+			Type:   packets.ActionPacketTypePublish,
 			Action: name,
 			Arg:    data,
 		},
@@ -90,14 +91,14 @@ func (i *RemotePeerAdapter) Publish(ctx context.Context, name string, data any) 
 }
 
 func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) (any, error) {
-	ph, err := i.getPacketHandler()
+	ph, err := i.getHandler()
 	if err != nil {
 		return nil, err
 	}
 
-	packet, err := ph.Request(Request{
-		Packet: ActionPacket{
-			Type:   ActionPacketTypePerformAndPublish,
+	packet, err := ph.Request(packets.Request{
+		Packet: packets.ActionPacket{
+			Type:   packets.ActionPacketTypePerformAndPublish,
 			Action: name,
 			Arg:    arg,
 		},
@@ -106,7 +107,7 @@ func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg 
 		return nil, err
 	}
 
-	respPacket, isRespPacket := packet.(ActionResponsePacket)
+	respPacket, isRespPacket := packet.(packets.ActionResponsePacket)
 	if !isRespPacket {
 		return nil, fmt.Errorf("unexpected response packet")
 	}
@@ -115,13 +116,13 @@ func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg 
 }
 
 func (i *RemotePeerAdapter) Actions(ctx context.Context) ([]string, error) {
-	ph, err := i.getPacketHandler()
+	ph, err := i.getHandler()
 	if err != nil {
 		return nil, err
 	}
 
-	packet, err := ph.Request(Request{
-		Packet: ListUnitsPacket{
+	packet, err := ph.Request(packets.Request{
+		Packet: packets.ListUnitsPacket{
 			Type: coattailtypes.UnitTypeAction,
 		},
 	})
@@ -129,7 +130,7 @@ func (i *RemotePeerAdapter) Actions(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	respPacket, isRespPacket := packet.(ListUnitsResponsePacket)
+	respPacket, isRespPacket := packet.(packets.ListUnitsResponsePacket)
 	if !isRespPacket {
 		return nil, fmt.Errorf("unexpected response packet")
 	}
@@ -153,13 +154,13 @@ func (i *RemotePeerAdapter) AddAction(ctx context.Context, name string, unit coa
 /* ====== Receivers ====== */
 
 func (i *RemotePeerAdapter) Receivers(ctx context.Context) ([]string, error) {
-	ph, err := i.getPacketHandler()
+	ph, err := i.getHandler()
 	if err != nil {
 		return nil, err
 	}
 
-	packet, err := ph.Request(Request{
-		Packet: ListUnitsPacket{
+	packet, err := ph.Request(packets.Request{
+		Packet: packets.ListUnitsPacket{
 			Type: coattailtypes.UnitTypeReceiver,
 		},
 	})
@@ -167,7 +168,7 @@ func (i *RemotePeerAdapter) Receivers(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	respPacket, isRespPacket := packet.(ListUnitsResponsePacket)
+	respPacket, isRespPacket := packet.(packets.ListUnitsResponsePacket)
 	if !isRespPacket {
 		return nil, fmt.Errorf("unexpected response packet")
 	}
@@ -189,12 +190,12 @@ func (i *RemotePeerAdapter) AddReceiver(ctx context.Context, name string, unit c
 }
 
 func (i *RemotePeerAdapter) Notify(ctx context.Context, name string, arg any) error {
-	ph, err := i.getPacketHandler()
+	ph, err := i.getHandler()
 	if err != nil {
 		return err
 	}
 
-	err = ph.Send(NotifyPacket{
+	err = ph.Send(packets.NotifyPacket{
 		Receiver: name,
 		Data:     arg,
 	})
@@ -221,14 +222,14 @@ func (i *RemotePeerAdapter) ListPeers(ctx context.Context) ([]*coattailtypes.Pee
 }
 
 func (i *RemotePeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Subscription) error {
-	ph, err := i.getPacketHandler()
+	ph, err := i.getHandler()
 	if err != nil {
 		return err
 	}
 
 	// Should use Request here to block until the subscription is complete
-	_, err = ph.Request(Request{
-		Packet: SubscribePacket{
+	_, err = ph.Request(packets.Request{
+		Packet: packets.SubscribePacket{
 			Address:  sub.Address,
 			Action:   sub.Action,
 			Receiver: sub.Receiver,

@@ -1,10 +1,11 @@
-package protocol
+package packets
 
 import (
 	"context"
 	"encoding/gob"
 	"fmt"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/host"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -17,20 +18,23 @@ type ListUnitsPacket struct {
 }
 
 func (h ListUnitsPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
-	mgr := GetManager(ctx)
+	ctHost, err := host.GetHost(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	var vals []string
+	var values []string
 
 	switch h.Type {
 	case coattailtypes.UnitTypeAction:
-		vals, _ = mgr.LocalPeer().Actions(ctx)
+		values, _ = ctHost.LocalPeer.Actions(ctx)
 	case coattailtypes.UnitTypeReceiver:
-		vals, _ = mgr.LocalPeer().Receivers(ctx)
+		values, _ = ctHost.LocalPeer.Receivers(ctx)
 	default:
 		return nil, fmt.Errorf("invalid unit type")
 	}
 
 	return ListUnitsResponsePacket{
-		Values: vals,
+		Values: values,
 	}, nil
 }

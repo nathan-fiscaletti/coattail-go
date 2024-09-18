@@ -1,9 +1,10 @@
-package protocol
+package packets
 
 import (
 	"context"
 	"encoding/gob"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/host"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -26,18 +27,20 @@ type ActionPacket struct {
 }
 
 func (h ActionPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
-	mgr := GetManager(ctx)
+	ctHost, err := host.GetHost(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var resp any
-	var err error
 
 	switch h.Type {
 	case ActionPacketTypePerformAndPublish:
-		resp, err = mgr.LocalPeer().RunAndPublish(ctx, h.Action, h.Arg)
+		resp, err = ctHost.LocalPeer.RunAndPublish(ctx, h.Action, h.Arg)
 	case ActionPacketTypePerform:
-		resp, err = mgr.LocalPeer().Run(ctx, h.Action, h.Arg)
+		resp, err = ctHost.LocalPeer.Run(ctx, h.Action, h.Arg)
 	case ActionPacketTypePublish:
-		err = mgr.LocalPeer().Publish(ctx, h.Action, h.Arg)
+		err = ctHost.LocalPeer.Publish(ctx, h.Action, h.Arg)
 	}
 	if err != nil {
 		return nil, err

@@ -1,9 +1,10 @@
-package protocol
+package packets
 
 import (
 	"context"
 	"encoding/gob"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/host"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -17,7 +18,11 @@ type NotifyPacket struct {
 }
 
 func (n NotifyPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
-	mgr := GetManager(ctx)
-	return nil, mgr.LocalPeer().
+	ctHost, err := host.GetHost(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, ctHost.LocalPeer.
 		Notify(ctx, n.Receiver, n.Data)
 }

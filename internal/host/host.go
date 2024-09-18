@@ -10,62 +10,64 @@ import (
 	"net/http"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/host/config"
+	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
-	"github.com/nathan-fiscaletti/coattail-go/internal/protocol"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 //go:embed web/**
 var web embed.FS
 
-var hostValue *host
-
-func GetHost() (*host, error) {
-	var err error
-	if hostValue == nil {
-		hostValue, err = newHost()
-	}
-
-	return hostValue, err
+type Host struct {
+	Config    *config.HostConfig `yaml:"host"`
+	LocalPeer *coattailtypes.Peer
 }
 
-func newHost() (*host, error) {
+func ContextWithHost(ctx context.Context) (context.Context, error) {
+	host := ctx.Value(keys.HostKey)
+
+	if host == nil {
+		host, err := newHost()
+		if err != nil {
+			return nil, err
+		}
+
+		return context.WithValue(ctx, keys.HostKey, host), nil
+	}
+
+	return ctx, nil
+}
+
+func GetHost(ctx context.Context) (*Host, error) {
+	host := ctx.Value(keys.HostKey)
+	if host == nil {
+		return nil, fmt.Errorf("no host found in context")
+	}
+
+	if h, ok := host.(*Host); ok {
+		return h, nil
+	}
+
+	return nil, fmt.Errorf("invalid host found in context")
+}
+
+func newHost() (*Host, error) {
 	hostConfig, err := config.GetHostConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	return &host{
+	return &Host{
 		Config: hostConfig,
 	}, nil
 }
 
-func Run(ctx context.Context, after func()) error {
-	host, err := GetHost()
-	if err != nil {
-		return err
-	}
+type ConnectionHandler func(context.Context, net.Conn)
 
-	ctx = logging.ContextWithLogger(ctx)
-	if err := host.start(ctx); err != nil {
-		return err
-	}
-
-	if after != nil {
-		after()
-	}
-
-	// Block forever
-	select {}
-}
-
-type host struct {
-	Config *config.HostConfig `yaml:"host"`
-}
-
-func (h *host) start(ctx context.Context) error {
+func (h *Host) Start(ctx context.Context, connHandler ConnectionHandler) error {
 	var err error
 
-	if err = h.startListener(ctx); err == nil {
+	if err = h.startListener(ctx, connHandler); err == nil {
 		if err = h.startApiServer(ctx); err == nil {
 			if err = h.startWebServer(ctx); err == nil {
 				return nil
@@ -76,7 +78,7 @@ func (h *host) start(ctx context.Context) error {
 	return err
 }
 
-func (h *host) startListener(ctx context.Context) error {
+func (h *Host) startListener(ctx context.Context, connHandler ConnectionHandler) error {
 	logger := logging.GetLogger(ctx)
 
 	logger.Printf("starting service at %v\n", h.Config.ServiceAddress)
@@ -94,7 +96,7 @@ func (h *host) startListener(ctx context.Context) error {
 			}
 
 			go func() {
-				go protocol.NewPacketHandler(ctx, conn).HandlePackets()
+				connHandler(ctx, conn)
 			}()
 		}
 	}()
@@ -102,7 +104,7 @@ func (h *host) startListener(ctx context.Context) error {
 	return nil
 }
 
-func (h *host) startWebServer(ctx context.Context) error {
+func (h *Host) startWebServer(ctx context.Context) error {
 	logger := logging.GetLogger(ctx)
 
 	wfbFs, err := fs.Sub(web, "web")
@@ -127,7 +129,7 @@ func (h *host) startWebServer(ctx context.Context) error {
 	return nil
 }
 
-func (h *host) startApiServer(ctx context.Context) error {
+func (h *Host) startApiServer(ctx context.Context) error {
 	logger := logging.GetLogger(ctx)
 
 	go func() {
