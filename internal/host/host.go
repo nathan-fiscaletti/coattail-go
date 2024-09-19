@@ -3,6 +3,7 @@ package host
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -134,9 +135,26 @@ func (h *Host) startApiServer(ctx context.Context) error {
 
 	go func() {
 		apiMux := http.NewServeMux()
-		apiMux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Hello, World!"))
+		apiMux.HandleFunc("/peers", func(w http.ResponseWriter, r *http.Request) {
+			peers, err := h.LocalPeer.ListPeers(ctx)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+
+			peerData, err := json.Marshal(peers)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+
+			// disable cors
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Write(peerData)
 		})
+
 		logger.Printf("starting api server at %v\n", h.Config.ApiAddress)
 
 		err := http.ListenAndServe(h.Config.ApiAddress, apiMux)

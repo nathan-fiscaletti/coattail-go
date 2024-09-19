@@ -1,9 +1,31 @@
 <html>
     <head>
         <title>Internal Web</title>
+
+        <script type="text/javascript">
+            function getPeers() {
+                // Call the rest api
+                const api = "http://localhost:8082/peers";
+
+                fetch(api)
+                    .then(response => response.json())
+                    .then(data => {
+                        const peers = document.getElementById("peers");
+                        peers.innerHTML = "";
+
+                        data.forEach(peer => {
+                            const li = document.createElement("li");
+                            li.innerText = peer.address;
+                            peers.appendChild(li);
+                        });
+                    });
+            }
+        </script>
     </head>
-    <body>
-        <h1>Internal Web</h1>
-        <p>This is the internal web page.</p>
+    <body onload="getPeers()">
+        <h1>Peers</h1>
+        <ul id="peers">
+            
+        </ul>
     </body>
 </html>

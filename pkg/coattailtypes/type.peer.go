@@ -9,21 +9,21 @@ import (
 type PeerDetails struct {
 	// Whether or not the peer is local. This should be true if the peer is the
 	// local peer, and false if the peer is a remote peer.
-	IsLocal bool `yaml:"is_local"`
+	IsLocal bool `yaml:"is_local" json:"is_local"`
 
 	// The address of the peer. This is the address that the peer can be reached
 	// at. For the local peer, this should be the address of the local machine.
-	Address string `yaml:"address"`
+	Address string `yaml:"address" json:"address"`
 
 	// The token of the peer. This is a secret token that is used to authenticate
 	// the peer. For the local peer, this should be an empty string.
-	Token string `yaml:"token"`
+	Token string `yaml:"token" json:"-"`
 }
 
 // Peer represents any coattail peer, whether local or remote.
 type Peer struct {
 	PeerDetails
-	PeerAdapter
+	PeerAdapter `json:"-"`
 }
 
 // NewPeer creates a new peer with the provided details and adapter.
