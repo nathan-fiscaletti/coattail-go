@@ -9,6 +9,7 @@ import (
 
 type HostConfig struct {
 	ServiceAddress string `yaml:"service_address"`
+	LogPackets     bool   `yaml:"log_packets"`
 	WebAddress     string `yaml:"web_address"`
 	ApiAddress     string `yaml:"api_address"`
 }

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/internal/packets"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
@@ -30,16 +32,16 @@ func newRemotePeerAdapter(details coattailtypes.PeerDetails) *RemotePeerAdapter 
 	}
 }
 
-func (i *RemotePeerAdapter) getHandler() (*packets.Handler, error) {
+func (i *RemotePeerAdapter) getHandler(ctx context.Context) (*packets.Handler, error) {
 	if i.handler == nil || !i.handler.IsConnected() {
 		conn, err := net.Dial("tcp", i.details.Address)
 		if err != nil {
 			return nil, err
 		}
 
-		ctx := context.Background()
-		i.handler = packets.NewHandler(ctx, conn)
-		i.handler.HandlePackets()
+		ctxWithAuthKey := context.WithValue(ctx, keys.AuthenticationKey, i.details.Token)
+		i.handler = packets.NewHandler(ctxWithAuthKey, conn, packets.InputRoleClient)
+		i.handler.HandlePackets(false)
 	}
 
 	return i.handler, nil
@@ -48,7 +50,7 @@ func (i *RemotePeerAdapter) getHandler() (*packets.Handler, error) {
 /* ====== Actions ====== */
 
 func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any, error) {
-	ph, err := i.getHandler()
+	ph, err := i.getHandler(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +75,7 @@ func (i *RemotePeerAdapter) Run(ctx context.Context, name string, arg any) (any,
 }
 
 func (i *RemotePeerAdapter) Publish(ctx context.Context, name string, data any) error {
-	ph, err := i.getHandler()
+	ph, err := i.getHandler(ctx)
 	if err != nil {
 		return err
 	}
@@ -90,33 +92,26 @@ func (i *RemotePeerAdapter) Publish(ctx context.Context, name string, data any) 
 	return err
 }
 
-func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) (any, error) {
-	ph, err := i.getHandler()
+func (i *RemotePeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) error {
+	ph, err := i.getHandler(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	packet, err := ph.Request(packets.Request{
-		Packet: packets.ActionPacket{
-			Type:   packets.ActionPacketTypePerformAndPublish,
-			Action: name,
-			Arg:    arg,
-		},
+	err = ph.Send(packets.ActionPacket{
+		Type:   packets.ActionPacketTypePerformAndPublish,
+		Action: name,
+		Arg:    arg,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	respPacket, isRespPacket := packet.(packets.ActionResponsePacket)
-	if !isRespPacket {
-		return nil, fmt.Errorf("unexpected response packet")
-	}
-
-	return respPacket.ResponseData, nil
+	return nil
 }
 
-func (i *RemotePeerAdapter) Actions(ctx context.Context) ([]string, error) {
-	ph, err := i.getHandler()
+func (i *RemotePeerAdapter) ListActions(ctx context.Context) ([]string, error) {
+	ph, err := i.getHandler(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +134,7 @@ func (i *RemotePeerAdapter) Actions(ctx context.Context) ([]string, error) {
 }
 
 func (i *RemotePeerAdapter) HasAction(ctx context.Context, name string) (bool, error) {
-	actions, err := i.Actions(ctx)
+	actions, err := i.ListActions(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -153,8 +148,8 @@ func (i *RemotePeerAdapter) RegisterAction(ctx context.Context, name string, uni
 
 /* ====== Receivers ====== */
 
-func (i *RemotePeerAdapter) Receivers(ctx context.Context) ([]string, error) {
-	ph, err := i.getHandler()
+func (i *RemotePeerAdapter) ListReceivers(ctx context.Context) ([]string, error) {
+	ph, err := i.getHandler(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +172,7 @@ func (i *RemotePeerAdapter) Receivers(ctx context.Context) ([]string, error) {
 }
 
 func (i *RemotePeerAdapter) HasReceiver(ctx context.Context, name string) (bool, error) {
-	receivers, err := i.Receivers(ctx)
+	receivers, err := i.ListReceivers(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -190,7 +185,7 @@ func (i *RemotePeerAdapter) RegisterReceiver(ctx context.Context, name string, u
 }
 
 func (i *RemotePeerAdapter) Notify(ctx context.Context, name string, arg any) error {
-	ph, err := i.getHandler()
+	ph, err := i.getHandler(ctx)
 	if err != nil {
 		return err
 	}
@@ -222,7 +217,7 @@ func (i *RemotePeerAdapter) ListPeers(ctx context.Context) ([]*coattailtypes.Pee
 }
 
 func (i *RemotePeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Subscription) error {
-	ph, err := i.getHandler()
+	ph, err := i.getHandler(ctx)
 	if err != nil {
 		return err
 	}
@@ -240,4 +235,16 @@ func (i *RemotePeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Su
 	}
 
 	return nil
+}
+
+/* ====== Credentials ====== */
+
+func (i *RemotePeerAdapter) IssueToken(ctx context.Context, origin net.IPNet) (string, error) {
+	return "", ErrAccessDenied
+}
+
+/* ====== Logger ====== */
+
+func (i *RemotePeerAdapter) Logger(ctx context.Context) (*log.Logger, error) {
+	return nil, ErrAccessDenied
 }

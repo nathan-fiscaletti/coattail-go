@@ -1,16 +1,14 @@
 package internal
 
-import "github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
+import (
+	"github.com/nathan-fiscaletti/coattail-go/demo/ct1/pkg/ct1types"
+)
 
 type TestReceiver struct{}
 
-func NewTestReceiver() coattailtypes.Unit {
-	return coattailtypes.NewReceiver[string](&TestReceiver{})
-}
-
-func (t *TestReceiver) Execute(arg *string) error {
+func (t *TestReceiver) Execute(arg *ct1types.Message) error {
 	if arg != nil {
-		print(*arg)
+		println(arg.Message)
 	}
 	return nil
 }

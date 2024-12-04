@@ -2,23 +2,28 @@ package logging
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 )
 
-func ContextWithLogger(ctx context.Context, appName string) context.Context {
+var (
+	ErrLoggerNotFound = errors.New("logger not found in context")
+)
+
+func ContextWithLogger(ctx context.Context, appName string) (context.Context, error) {
 	logger := log.New(os.Stdout, "["+appName+"] ", log.LstdFlags)
-	return context.WithValue(ctx, keys.LoggerKey, logger)
+	return context.WithValue(ctx, keys.LoggerKey, logger), nil
 }
 
-func GetLogger(ctx context.Context) *log.Logger {
+func GetLogger(ctx context.Context) (*log.Logger, error) {
 	if v := ctx.Value(keys.LoggerKey); v != nil {
 		if l, ok := v.(*log.Logger); ok {
-			return l
+			return l, nil
 		}
 	}
 
-	return nil
+	return nil, ErrLoggerNotFound
 }

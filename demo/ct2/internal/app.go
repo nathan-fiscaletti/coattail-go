@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 
+	"github.com/nathan-fiscaletti/coattail-go/demo/ct1/pkg/ct1types"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
@@ -10,7 +11,7 @@ import (
 type CT2 struct{}
 
 func (c *CT2) OnStart(ctx context.Context, local *coattailtypes.Peer) {
-	if err := local.RegisterReceiver(ctx, "testReceiver", NewTestReceiver()); err != nil {
+	if err := local.RegisterReceiver(ctx, "testReceiver", coattailtypes.NewReceiver[ct1types.Message](&TestReceiver{})); err != nil {
 		panic(err)
 	}
 
@@ -32,7 +33,7 @@ func (c *CT2) OnStart(ctx context.Context, local *coattailtypes.Peer) {
 	}
 
 	// Run an action on the remote peer and publish it's actions to it's subscribers.
-	_, err = remote.RunAndPublish(ctx, "test", nil)
+	err = remote.RunAndPublish(ctx, "test", nil)
 	if err != nil {
 		panic(err)
 	}

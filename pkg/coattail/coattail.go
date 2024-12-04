@@ -11,6 +11,7 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/internal/host"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
 	"github.com/nathan-fiscaletti/coattail-go/internal/packets"
+	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -35,8 +36,8 @@ func Run(app coattailtypes.App) error {
 		return err
 	}
 
-	if err := h.Start(ctx, func(ctx context.Context, conn net.Conn) {
-		go packets.NewHandler(ctx, conn).HandlePackets()
+	if err := h.Start(ctx, func(ctx context.Context, conn net.Conn, logPackets bool) {
+		go packets.NewHandler(ctx, conn, packets.InputRoleServer).HandlePackets(logPackets)
 	}); err != nil {
 		return err
 	}
@@ -48,13 +49,16 @@ func Run(app coattailtypes.App) error {
 }
 
 func createContext(app coattailtypes.App) (context.Context, error) {
-	ctx := logging.ContextWithLogger(
+	ctx, err := logging.ContextWithLogger(
 		context.Background(),
 		reflect.TypeOf(app).String(),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize the database
-	ctx, err := database.ContextWithDatabase(ctx, database.DatabaseConfig{
+	ctx, err = database.ContextWithDatabase(ctx, database.DatabaseConfig{
 		Path: "./data.db",
 	})
 	if err != nil {
@@ -62,6 +66,11 @@ func createContext(app coattailtypes.App) (context.Context, error) {
 	}
 
 	ctx, err = host.ContextWithHost(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, err = authentication.ContextWithService(ctx)
 	if err != nil {
 		return nil, err
 	}

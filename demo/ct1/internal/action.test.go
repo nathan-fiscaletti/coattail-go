@@ -1,13 +1,19 @@
 package internal
 
-import "github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
+import (
+	"encoding/gob"
+
+	"github.com/nathan-fiscaletti/coattail-go/demo/ct1/pkg/ct1types"
+)
 
 type TestAction struct{}
 
-func NewTestAction() coattailtypes.Unit {
-	return coattailtypes.NewAction[any, string](&TestAction{})
+func init() {
+	gob.Register(ct1types.Message{})
 }
 
-func (t *TestAction) Execute(_ *any) (string, error) {
-	return "Hello, World!", nil
+func (t *TestAction) Execute(_ *any) (ct1types.Message, error) {
+	return ct1types.Message{
+		Message: "Hello, world!",
+	}, nil
 }

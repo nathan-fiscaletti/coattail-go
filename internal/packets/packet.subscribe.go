@@ -34,5 +34,5 @@ func (h SubscribePacket) Handle(ctx context.Context) (coattailtypes.Packet, erro
 		return nil, err
 	}
 
-	return GoodbyePacket{}, nil
+	return EmptyPacket{}, nil
 }

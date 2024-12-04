@@ -7,4 +7,6 @@ const (
 	HostKey
 	LoggerKey
 	DatabaseKey
+	ConnectionKey
+	AuthenticationKey
 )

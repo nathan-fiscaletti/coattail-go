@@ -3,8 +3,8 @@ package packets
 import (
 	"encoding/gob"
 	"io"
-	"sync/atomic"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/util/atomicid"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -15,14 +15,14 @@ type EncodedPacket struct {
 }
 
 type StreamCodec struct {
-	id      *atomicId
+	id      *atomicid.AtomicId
 	encoder *gob.Encoder
 	decoder *gob.Decoder
 }
 
 func NewStreamCodec(rw io.ReadWriter) *StreamCodec {
 	return &StreamCodec{
-		id:      newAtomicId(new(uint64)),
+		id:      atomicid.New(new(uint64)),
 		encoder: gob.NewEncoder(rw),
 		decoder: gob.NewDecoder(rw),
 	}
@@ -39,7 +39,7 @@ func (e StreamCodec) Read() (EncodedPacket, error) {
 }
 
 func (e StreamCodec) Write(callerId uint64, p coattailtypes.Packet) (uint64, error) {
-	packetId := e.id.next()
+	packetId := e.id.Next()
 	err := e.encoder.Encode(EncodedPacket{
 		ID:           packetId,
 		RespondingTo: callerId,
@@ -50,18 +50,4 @@ func (e StreamCodec) Write(callerId uint64, p coattailtypes.Packet) (uint64, err
 	}
 
 	return packetId, nil
-}
-
-type atomicId uint64
-
-func newAtomicId(id *uint64) *atomicId {
-	return (*atomicId)(id)
-}
-
-func (p *atomicId) next() uint64 {
-	return atomic.AddUint64((*uint64)(p), 1)
-}
-
-func (p *atomicId) current() uint64 {
-	return atomic.LoadUint64((*uint64)(p))
 }

@@ -3,12 +3,15 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
 	"os"
 	"path/filepath"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/database"
 	"github.com/nathan-fiscaletti/coattail-go/internal/host"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
+	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 	"github.com/samber/lo"
@@ -105,7 +108,9 @@ func (i *LocalPeerAdapter) runUnit(arg runUnitArguments) (any, error) {
 /* ====== Actions ====== */
 
 func (i *LocalPeerAdapter) Run(ctx context.Context, name string, arg any) (any, error) {
-	logging.GetLogger(ctx).Printf("running action: %s", name)
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		logger.Printf("running action: %s", name)
+	}
 
 	return i.runUnit(runUnitArguments{
 		Type: coattailtypes.UnitTypeAction,
@@ -115,7 +120,9 @@ func (i *LocalPeerAdapter) Run(ctx context.Context, name string, arg any) (any, 
 }
 
 func (i *LocalPeerAdapter) Publish(ctx context.Context, name string, data any) error {
-	logging.GetLogger(ctx).Printf("publishing action: %s", name)
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		logger.Printf("publishing action: %s", name)
+	}
 
 	db, err := database.GetDatabase(ctx)
 	if err != nil {
@@ -156,20 +163,24 @@ func (i *LocalPeerAdapter) Publish(ctx context.Context, name string, data any) e
 	return nil
 }
 
-func (i *LocalPeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) (any, error) {
+func (i *LocalPeerAdapter) RunAndPublish(ctx context.Context, name string, arg any) error {
 	res, err := i.Run(ctx, name, arg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := i.Publish(ctx, name, res); err != nil {
-		return nil, err
-	}
+	defer func() {
+		if err := i.Publish(ctx, name, res); err != nil {
+			if logger, _ := logging.GetLogger(ctx); logger != nil {
+				logger.Printf("error publishing action: %s", err)
+			}
+		}
+	}()
 
-	return res, nil
+	return nil
 }
 
-func (i *LocalPeerAdapter) Actions(ctx context.Context) ([]string, error) {
+func (i *LocalPeerAdapter) ListActions(ctx context.Context) ([]string, error) {
 	return lo.Map(lo.Filter(i.Units, func(h coattailtypes.UnitImpl, _ int) bool {
 		return h.UnitType == coattailtypes.UnitTypeAction
 	}), func(h coattailtypes.UnitImpl, _ int) string {
@@ -184,8 +195,7 @@ func (i *LocalPeerAdapter) HasAction(ctx context.Context, name string) (bool, er
 }
 
 func (i *LocalPeerAdapter) RegisterAction(ctx context.Context, name string, unit coattailtypes.Unit) error {
-	exists, _ := i.HasAction(ctx, name)
-	if exists {
+	if exists, _ := i.HasAction(ctx, name); exists {
 		return fmt.Errorf("action %s already exists", name)
 	}
 
@@ -195,14 +205,16 @@ func (i *LocalPeerAdapter) RegisterAction(ctx context.Context, name string, unit
 		UnitType: coattailtypes.UnitTypeAction,
 	})
 
-	logging.GetLogger(ctx).Printf("registered action '%s' at %p", name, &unit)
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		logger.Printf("registered action '%s' at %p", name, &unit)
+	}
 
 	return nil
 }
 
 /* ====== Receivers ====== */
 
-func (i *LocalPeerAdapter) Receivers(ctx context.Context) ([]string, error) {
+func (i *LocalPeerAdapter) ListReceivers(ctx context.Context) ([]string, error) {
 	return lo.Map(lo.Filter(i.Units, func(h coattailtypes.UnitImpl, _ int) bool {
 		return h.UnitType == coattailtypes.UnitTypeReceiver
 	}), func(h coattailtypes.UnitImpl, _ int) string {
@@ -217,8 +229,7 @@ func (i *LocalPeerAdapter) HasReceiver(ctx context.Context, name string) (bool, 
 }
 
 func (i *LocalPeerAdapter) RegisterReceiver(ctx context.Context, name string, unit coattailtypes.Unit) error {
-	exists, _ := i.HasReceiver(ctx, name)
-	if exists {
+	if exists, _ := i.HasReceiver(ctx, name); exists {
 		return fmt.Errorf("receiver %s already exists", name)
 	}
 
@@ -228,13 +239,17 @@ func (i *LocalPeerAdapter) RegisterReceiver(ctx context.Context, name string, un
 		UnitType: coattailtypes.UnitTypeReceiver,
 	})
 
-	logging.GetLogger(ctx).Printf("registered receiver '%s' at %p", name, &unit)
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		logger.Printf("registered receiver '%s' at %p", name, &unit)
+	}
 
 	return nil
 }
 
 func (i *LocalPeerAdapter) Notify(ctx context.Context, name string, arg any) error {
-	logging.GetLogger(ctx).Printf("notifying receiver: %s", name)
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		logger.Printf("notifying receiver: %s", name)
+	}
 
 	_, err := i.runUnit(runUnitArguments{
 		Type: coattailtypes.UnitTypeReceiver,
@@ -289,6 +304,26 @@ func (i *LocalPeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Sub
 		return nil
 	}
 
-	logging.GetLogger(ctx).Printf("registering subscriber: %s", sub.String())
+	if logger, err := logging.GetLogger(ctx); err == nil {
+		logger.Printf("registering subscriber: %s", sub.String())
+	}
+
 	return db.Create(&sub).Error
+}
+
+/* ====== Credentials ====== */
+
+func (i *LocalPeerAdapter) IssueToken(ctx context.Context, origin net.IPNet) (string, error) {
+	auth, err := authentication.GetService(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return auth.Issue(origin)
+}
+
+/* ====== Logger ====== */
+
+func (i *LocalPeerAdapter) Logger(ctx context.Context) (*log.Logger, error) {
+	return logging.GetLogger(ctx)
 }

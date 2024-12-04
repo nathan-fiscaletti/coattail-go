@@ -36,7 +36,7 @@ func (h ActionPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) 
 
 	switch h.Type {
 	case ActionPacketTypePerformAndPublish:
-		resp, err = ctHost.LocalPeer.RunAndPublish(ctx, h.Action, h.Arg)
+		err = ctHost.LocalPeer.RunAndPublish(ctx, h.Action, h.Arg)
 	case ActionPacketTypePerform:
 		resp, err = ctHost.LocalPeer.Run(ctx, h.Action, h.Arg)
 	case ActionPacketTypePublish:
@@ -46,8 +46,12 @@ func (h ActionPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) 
 		return nil, err
 	}
 
-	return ActionResponsePacket{
-		Action:       h.Action,
-		ResponseData: resp,
-	}, nil
+	if h.Type == ActionPacketTypePerform {
+		return ActionResponsePacket{
+			Action:       h.Action,
+			ResponseData: resp,
+		}, nil
+	}
+
+	return nil, nil
 }

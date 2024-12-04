@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net"
+	"os"
+	"reflect"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
-	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -18,28 +22,46 @@ import (
 // will block until an operation is completed.
 const MaxBufferedOperations = 100
 
+type HandlerInputRole int
+
+const (
+	InputRoleServer HandlerInputRole = iota
+	InputRoleClient
+)
+
 // Handler is a handler for incoming and outgoing packets on a connection.
 type Handler struct {
-	ctx       context.Context
-	conn      net.Conn
-	codec     *StreamCodec
-	wg        sync.WaitGroup
-	output    chan outputOperation
-	connected bool
+	ctx           context.Context
+	inputRole     HandlerInputRole
+	conn          net.Conn
+	authenticated bool
+	codec         *StreamCodec
+	wg            sync.WaitGroup
+	authWg        sync.WaitGroup
+	output        chan outputOperation
+	connected     bool
 }
 
 // NewHandler creates a new PacketHandler with the provided context and
 // connection. The PacketHandler will handle incoming and outgoing packets on
 // the connection. The context will be used to pass services to the packet
 // handlers.
-func NewHandler(ctx context.Context, conn net.Conn) *Handler {
-	// Initialize services.
-	ctx = authentication.ContextWithService(ctx)
+func NewHandler(ctx context.Context, conn net.Conn, inputRole HandlerInputRole) *Handler {
+	var ctxWithLogger context.Context = ctx
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		_, port, err := net.SplitHostPort(conn.RemoteAddr().String())
+		if err == nil {
+			connLogger := log.New(os.Stdout, logger.Prefix()+"[p"+port+"] ", log.LstdFlags)
+			ctxWithLogger = context.WithValue(ctxWithLogger, keys.LoggerKey, connLogger)
+		}
+	}
 
 	return &Handler{
-		ctx:   ctx,
-		conn:  conn,
-		codec: NewStreamCodec(conn),
+		ctx:           ctxWithLogger,
+		inputRole:     inputRole,
+		conn:          conn,
+		authenticated: inputRole == InputRoleClient,
+		codec:         NewStreamCodec(conn),
 	}
 }
 
@@ -51,7 +73,7 @@ func (c *Handler) Context() context.Context {
 
 // HandlePackets starts handling incoming and outgoing packets on the connection.
 // This function will block until the connection is closed.
-func (c *Handler) HandlePackets() {
+func (c *Handler) HandlePackets(logPackets bool) {
 	if c.connected {
 		panic("attempted to start handling packets on an already connected PacketHandler")
 	}
@@ -60,8 +82,14 @@ func (c *Handler) HandlePackets() {
 	c.wg = sync.WaitGroup{}
 	c.output = make(chan outputOperation, MaxBufferedOperations)
 	c.wg.Add(2)
-	go c.startOutput()
-	go c.startInput()
+	go c.startOutput(logPackets)
+	go c.startInput(logPackets)
+
+	c.authWg.Add(1)
+	if c.inputRole == InputRoleClient {
+		go c.startAuthentication()
+	}
+
 	go func() {
 		c.wg.Wait()
 		c.connected = false
@@ -139,7 +167,8 @@ func (c *Handler) Request(request Request) (coattailtypes.Packet, error) {
 	select {
 	case <-time.After(request.ResponseTimeout):
 		responseHandlers.Delete(id)
-		return nil, fmt.Errorf("timeout waiting for response")
+		packetName := reflect.TypeOf(request.Packet).Name()
+		return nil, fmt.Errorf("timeout waiting for response for packet %v %v", packetName, id)
 	case resp := <-respChan:
 		return resp.(coattailtypes.Packet), nil
 	}
@@ -175,7 +204,39 @@ func (c *Handler) respond(resp response) error {
 	return <-errChan
 }
 
-func (c *Handler) startOutput() {
+func (c *Handler) startAuthentication() {
+	handleResponseErr := func(err error) {
+		if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+			logger.Printf("Error authenticating: %s", err)
+		}
+	}
+
+	resp, err := c.Request(Request{
+		Packet: AuthenticationPacket{
+			Token: c.ctx.Value(keys.AuthenticationKey).(string),
+		},
+	})
+	if err != nil {
+		handleResponseErr(err)
+		return
+	}
+
+	respPacket, isRespPacket := resp.(AuthenticationResponsePacket)
+	if !isRespPacket {
+		handleResponseErr(fmt.Errorf("unexpected response packet"))
+		return
+	}
+
+	if !respPacket.Authenticated {
+		handleResponseErr(fmt.Errorf("authentication failed: %s", respPacket.Error))
+		return
+	}
+
+	c.authenticated = true
+	c.authWg.Done()
+}
+
+func (c *Handler) startOutput(logPackets bool) {
 	defer c.wg.Done()
 
 	for {
@@ -184,10 +245,22 @@ func (c *Handler) startOutput() {
 			break
 		}
 
+		// check if output is authentication response
+		if authResPacket, isAuthRespPacket := operation.packet.(AuthenticationResponsePacket); isAuthRespPacket {
+			c.authenticated = authResPacket.Authenticated
+			c.authWg.Done()
+		}
+
 		id, err := c.codec.Write(operation.callerId, operation.packet)
 		if err != nil {
 			operation.errChan <- err
 			continue
+		}
+
+		if logPackets {
+			if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+				logger.Printf("(->%s) %T[%d,r%d]{%v}\n", c.conn.RemoteAddr().String(), operation.packet, id, operation.callerId, operation.packet.(any))
+			}
 		}
 
 		if operation.respChan != nil {
@@ -202,38 +275,34 @@ func (c *Handler) startOutput() {
 	}
 }
 
-func (c *Handler) startInput() {
+func (c *Handler) startInput(logPackets bool) {
 	defer c.wg.Done()
 	defer close(c.output)
 
-	logger := logging.GetLogger(c.Context())
-
 	// Set the initial read deadline to 10 seconds
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-
-	var lastPacketId uint64
 
 	for {
 		// Read and decode the incoming ProtocolPacket
 		packet, err := c.codec.Read()
 
-		if packet.ID <= lastPacketId {
-			// If the packet ID is less than or equal to the last packet ID,
-			// ignore the packet. This is to prevent replay attacks.
-			continue
-		}
-
-		lastPacketId = packet.ID
-
 		// Handle timeout error or EOF
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				logger.Println("Connection timed out due to inactivity.")
+				if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+					logger.Println("Connection timed out due to inactivity.")
+				}
 				return
 			}
-			if err == io.EOF {
-				logger.Println("Connection closed by peer.")
+			if err == io.EOF || strings.Contains(err.Error(), "An existing connection was forcibly closed by the remote host") {
+				if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+					logger.Println("Connection closed by peer.")
+				}
 				return
+			}
+
+			if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+				logger.Printf("Error reading packet: %s\n", err)
 			}
 
 			// If we failed to decode a packet, try again with the next packet
@@ -244,8 +313,38 @@ func (c *Handler) startInput() {
 		// Reset the deadline after successful read & process
 		c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
+		// print the packet
+		if logPackets {
+			if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+				logger.Printf("(<-%s) %T[%d,r%d]{%v}\n", c.conn.RemoteAddr().String(), packet.Data, packet.ID, packet.RespondingTo, packet.Data)
+			}
+		}
+
 		// Process the Packet in a new goroutine
 		go func() {
+			// Make sure that either the connection is authenticated, or that
+			// the packet is an authentication packet.
+			if !c.authenticated {
+				if _, isAuthPacket := packet.Data.(AuthenticationPacket); !isAuthPacket {
+					c.authWg.Wait()
+					if !c.authenticated {
+						logger, _ := logging.GetLogger(c.Context())
+						packetName := reflect.TypeOf(packet.Data).Name()
+						logger.Printf("Authentication failed for packet %v (responding to: %v)\n", packetName, packet.RespondingTo)
+						err = c.respond(response{
+							CallerID: packet.ID,
+							Packet:   AuthenticationInvalidPacket{},
+						})
+						if err != nil {
+							if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+								logger.Printf("Error writing response packet: %s\n", err)
+							}
+						}
+						return
+					}
+				}
+			}
+
 			// If this is a response packet, load the response handler for the
 			// original packet (if any) and send it the response.
 			if packet.RespondingTo != 0 {
@@ -258,9 +357,13 @@ func (c *Handler) startInput() {
 			}
 
 			// Handle the packet.
-			resp, err := packet.Data.(coattailtypes.Packet).Handle(c.ctx)
+			resp, err := packet.Data.(coattailtypes.Packet).Handle(
+				context.WithValue(c.ctx, keys.ConnectionKey, c.conn),
+			)
 			if err != nil {
-				logger.Printf("Error executing packet: %s\n", err)
+				if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+					logger.Printf("Error executing packet: %s\n", err)
+				}
 			}
 
 			// If the packet handler returned a response, send it back to the
@@ -271,7 +374,9 @@ func (c *Handler) startInput() {
 					Packet:   resp,
 				})
 				if err != nil {
-					logger.Printf("Error writing response packet: %s\n", err)
+					if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+						logger.Printf("Error writing response packet: %s\n", err)
+					}
 				}
 			}
 		}()

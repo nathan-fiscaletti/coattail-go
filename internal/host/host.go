@@ -3,13 +3,13 @@ package host
 import (
 	"context"
 	"embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"net"
 	"net/http"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/host/api"
 	"github.com/nathan-fiscaletti/coattail-go/internal/host/config"
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
@@ -63,7 +63,7 @@ func newHost() (*Host, error) {
 	}, nil
 }
 
-type ConnectionHandler func(context.Context, net.Conn)
+type ConnectionHandler func(context.Context, net.Conn, bool)
 
 func (h *Host) Start(ctx context.Context, connHandler ConnectionHandler) error {
 	var err error
@@ -80,9 +80,9 @@ func (h *Host) Start(ctx context.Context, connHandler ConnectionHandler) error {
 }
 
 func (h *Host) startListener(ctx context.Context, connHandler ConnectionHandler) error {
-	logger := logging.GetLogger(ctx)
-
-	logger.Printf("starting service at %v\n", h.Config.ServiceAddress)
+	if logger, err := logging.GetLogger(ctx); err == nil {
+		logger.Printf("starting service at %v\n", h.Config.ServiceAddress)
+	}
 	listener, err := net.Listen("tcp", h.Config.ServiceAddress)
 	if err != nil {
 		return errors.Join(fmt.Errorf("failed to start listener"), err)
@@ -92,12 +92,14 @@ func (h *Host) startListener(ctx context.Context, connHandler ConnectionHandler)
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
-				logger.Print(errors.Join(fmt.Errorf("failed to accept connection"), err))
+				if logger, err := logging.GetLogger(ctx); err == nil {
+					logger.Print(errors.Join(fmt.Errorf("failed to accept connection"), err))
+				}
 				continue
 			}
 
 			go func() {
-				connHandler(ctx, conn)
+				connHandler(ctx, conn, h.Config.LogPackets)
 			}()
 		}
 	}()
@@ -106,8 +108,6 @@ func (h *Host) startListener(ctx context.Context, connHandler ConnectionHandler)
 }
 
 func (h *Host) startWebServer(ctx context.Context) error {
-	logger := logging.GetLogger(ctx)
-
 	wfbFs, err := fs.Sub(web, "web")
 	if err != nil {
 		// We should panic here because this means the embedded
@@ -119,11 +119,15 @@ func (h *Host) startWebServer(ctx context.Context) error {
 		webMux := http.NewServeMux()
 		fs := http.FileServer(http.FS(wfbFs))
 		webMux.Handle("/", fs)
-		logger.Printf("starting web server at %v\n", h.Config.WebAddress)
+		if logger, err := logging.GetLogger(ctx); err == nil {
+			logger.Printf("starting web server at %v\n", h.Config.WebAddress)
+		}
 
 		err = http.ListenAndServe(h.Config.WebAddress, webMux)
 		if err != nil {
-			logger.Print(errors.Join(fmt.Errorf("listen and serve error"), err))
+			if logger, err := logging.GetLogger(ctx); err == nil {
+				logger.Print(errors.Join(fmt.Errorf("listen and serve error"), err))
+			}
 		}
 	}()
 
@@ -131,35 +135,21 @@ func (h *Host) startWebServer(ctx context.Context) error {
 }
 
 func (h *Host) startApiServer(ctx context.Context) error {
-	logger := logging.GetLogger(ctx)
-
 	go func() {
+		if logger, err := logging.GetLogger(ctx); err == nil {
+			logger.Printf("starting api server at %v\n", h.Config.ApiAddress)
+		}
+
 		apiMux := http.NewServeMux()
-		apiMux.HandleFunc("/peers", func(w http.ResponseWriter, r *http.Request) {
-			peers, err := h.LocalPeer.ListPeers(ctx)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
-				return
-			}
 
-			peerData, err := json.Marshal(peers)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
-				return
-			}
-
-			// disable cors
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Write(peerData)
-		})
-
-		logger.Printf("starting api server at %v\n", h.Config.ApiAddress)
+		apiMux.Handle("/peers", api.NewPeersHandler(ctx, h.LocalPeer))
+		apiMux.Handle("/actions", api.NewActionsHandler(ctx, h.LocalPeer))
 
 		err := http.ListenAndServe(h.Config.ApiAddress, apiMux)
 		if err != nil {
-			logger.Print(errors.Join(fmt.Errorf("failed to start api server"), err))
+			if logger, err := logging.GetLogger(ctx); err == nil {
+				logger.Print(errors.Join(fmt.Errorf("failed to start api server"), err))
+			}
 		}
 	}()
 

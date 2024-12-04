@@ -27,9 +27,9 @@ func (h ListUnitsPacket) Handle(ctx context.Context) (coattailtypes.Packet, erro
 
 	switch h.Type {
 	case coattailtypes.UnitTypeAction:
-		values, _ = ctHost.LocalPeer.Actions(ctx)
+		values, _ = ctHost.LocalPeer.ListActions(ctx)
 	case coattailtypes.UnitTypeReceiver:
-		values, _ = ctHost.LocalPeer.Receivers(ctx)
+		values, _ = ctHost.LocalPeer.ListReceivers(ctx)
 	default:
 		return nil, fmt.Errorf("invalid unit type")
 	}

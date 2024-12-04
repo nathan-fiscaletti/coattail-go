@@ -2,6 +2,8 @@ package coattailtypes
 
 import (
 	"context"
+	"log"
+	"net"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 )
@@ -42,6 +44,8 @@ type PeerAdapter interface {
 	ActionManager
 	ReceiverManager
 	PeerManager
+	CredentialManager
+	LogManager
 }
 
 type ActionManager interface {
@@ -61,12 +65,12 @@ type ActionManager interface {
 	// The name of the action should be provided as the first argument. The second
 	// argument is the data that should be passed to the action. The return value
 	// is the result of the action, or an error if the action failed.
-	RunAndPublish(ctx context.Context, name string, arg any) (any, error)
+	RunAndPublish(ctx context.Context, name string, arg any) error
 
-	// Actions returns a list of all actions that are available on the peer.
+	// ListActions returns a list of all actions that are available on the peer.
 	// The return value is a list of action names, or an error if the list could
 	// not be retrieved.
-	Actions(ctx context.Context) ([]string, error)
+	ListActions(ctx context.Context) ([]string, error)
 
 	// RegisterAction adds an action to the peer. The name of the action should be
 	// provided as the first argument. The second argument is the unit that
@@ -81,10 +85,10 @@ type ActionManager interface {
 }
 
 type ReceiverManager interface {
-	// Receivers returns a list of all receivers that are available on the peer.
+	// ListReceivers returns a list of all receivers that are available on the peer.
 	// The return value is a list of receiver names, or an error if the list could
 	// not be retrieved.
-	Receivers(ctx context.Context) ([]string, error)
+	ListReceivers(ctx context.Context) ([]string, error)
 
 	// HasReceiver checks if a receiver is available on the peer. The name of the
 	// receiver should be provided as the first argument. The return value is
@@ -129,4 +133,12 @@ type PeerManager interface {
 	// as the first argument. The return value is an error if the subscription could
 	// not be completed.
 	Subscribe(ctx context.Context, sub coattailmodels.Subscription) error
+}
+
+type CredentialManager interface {
+	IssueToken(ctx context.Context, origin net.IPNet) (string, error)
+}
+
+type LogManager interface {
+	Logger(ctx context.Context) (*log.Logger, error)
 }
