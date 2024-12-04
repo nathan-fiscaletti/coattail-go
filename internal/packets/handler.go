@@ -2,6 +2,7 @@ package packets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -31,15 +32,16 @@ const (
 
 // Handler is a handler for incoming and outgoing packets on a connection.
 type Handler struct {
-	ctx           context.Context
-	inputRole     HandlerInputRole
-	conn          net.Conn
-	authenticated bool
-	codec         *StreamCodec
-	wg            sync.WaitGroup
-	authWg        sync.WaitGroup
-	output        chan outputOperation
-	connected     bool
+	ctx                 context.Context
+	inputRole           HandlerInputRole
+	conn                net.Conn
+	authenticated       bool
+	authenticationError string
+	codec               *StreamCodec
+	wg                  sync.WaitGroup
+	authWg              sync.WaitGroup
+	output              chan outputOperation
+	connected           bool
 }
 
 // NewHandler creates a new PacketHandler with the provided context and
@@ -153,11 +155,6 @@ func (c *Handler) Request(request Request) (coattailtypes.Packet, error) {
 		respChan: respChan,
 	}
 
-	err := <-errChan
-	if err != nil {
-		return nil, err
-	}
-
 	id := <-idChan
 
 	if request.ResponseTimeout == 0 {
@@ -167,14 +164,21 @@ func (c *Handler) Request(request Request) (coattailtypes.Packet, error) {
 	select {
 	case <-time.After(request.ResponseTimeout):
 		responseHandlers.Delete(id)
+		errorHandlers.Delete(id)
 		packetName := reflect.TypeOf(request.Packet).Name()
 		return nil, fmt.Errorf("timeout waiting for response for packet %v %v", packetName, id)
 	case resp := <-respChan:
+		if p, ok := resp.(AuthenticationInvalidPacket); ok {
+			return nil, errors.New(p.Error)
+		}
 		return resp.(coattailtypes.Packet), nil
+	case err := <-errChan:
+		return nil, err
 	}
 }
 
 var responseHandlers = sync.Map{}
+var errorHandlers = sync.Map{}
 
 type outputOperation struct {
 	callerId uint64
@@ -194,12 +198,17 @@ type response struct {
 // sent.
 func (c *Handler) respond(resp response) error {
 	errChan := make(chan error)
+	idChan := make(chan uint64)
 
 	c.output <- outputOperation{
 		callerId: resp.CallerID,
 		packet:   resp.Packet,
 		errChan:  errChan,
+		idChan:   idChan,
 	}
+
+	id := <-idChan
+	errorHandlers.Store(id, errChan)
 
 	return <-errChan
 }
@@ -207,7 +216,7 @@ func (c *Handler) respond(resp response) error {
 func (c *Handler) startAuthentication() {
 	handleResponseErr := func(err error) {
 		if logger, _ := logging.GetLogger(c.Context()); logger != nil {
-			logger.Printf("Error authenticating: %s", err)
+			logger.Printf("%s", err)
 		}
 	}
 
@@ -221,9 +230,11 @@ func (c *Handler) startAuthentication() {
 		return
 	}
 
+	defer c.authWg.Done()
+
 	respPacket, isRespPacket := resp.(AuthenticationResponsePacket)
 	if !isRespPacket {
-		handleResponseErr(fmt.Errorf("unexpected response packet"))
+		handleResponseErr(fmt.Errorf("unexpected response packet of type %v", resp))
 		return
 	}
 
@@ -232,8 +243,7 @@ func (c *Handler) startAuthentication() {
 		return
 	}
 
-	c.authenticated = true
-	c.authWg.Done()
+	c.authenticated = respPacket.Authenticated
 }
 
 func (c *Handler) startOutput(logPackets bool) {
@@ -248,6 +258,7 @@ func (c *Handler) startOutput(logPackets bool) {
 		// check if output is authentication response
 		if authResPacket, isAuthRespPacket := operation.packet.(AuthenticationResponsePacket); isAuthRespPacket {
 			c.authenticated = authResPacket.Authenticated
+			c.authenticationError = authResPacket.Error
 			c.authWg.Done()
 		}
 
@@ -267,7 +278,9 @@ func (c *Handler) startOutput(logPackets bool) {
 			responseHandlers.Store(id, operation.respChan)
 		}
 
-		operation.errChan <- nil
+		if operation.errChan != nil {
+			errorHandlers.Store(id, operation.errChan)
+		}
 
 		if operation.idChan != nil {
 			operation.idChan <- id
@@ -324,23 +337,46 @@ func (c *Handler) startInput(logPackets bool) {
 		go func() {
 			// Make sure that either the connection is authenticated, or that
 			// the packet is an authentication packet.
-			if !c.authenticated {
-				if _, isAuthPacket := packet.Data.(AuthenticationPacket); !isAuthPacket {
-					c.authWg.Wait()
-					if !c.authenticated {
-						logger, _ := logging.GetLogger(c.Context())
-						packetName := reflect.TypeOf(packet.Data).Name()
-						logger.Printf("Authentication failed for packet %v (responding to: %v)\n", packetName, packet.RespondingTo)
-						err = c.respond(response{
-							CallerID: packet.ID,
-							Packet:   AuthenticationInvalidPacket{},
-						})
-						if err != nil {
-							if logger, _ := logging.GetLogger(c.Context()); logger != nil {
-								logger.Printf("Error writing response packet: %s\n", err)
+			if c.inputRole == InputRoleServer {
+				if !c.authenticated { // Should only be run on the host since authenticated is always true on the clients
+					if _, isAuthPacket := packet.Data.(AuthenticationPacket); !isAuthPacket {
+						c.authWg.Wait()
+						if !c.authenticated {
+							logger, _ := logging.GetLogger(c.Context())
+							packetName := reflect.TypeOf(packet.Data).Name()
+							logger.Printf("Authentication failed for packet %v (responding to: %v)\n", packetName, packet.RespondingTo)
+							err = c.respond(response{
+								CallerID: packet.ID,
+								Packet: AuthenticationInvalidPacket{
+									Error: fmt.Sprintf("authentication failed: %s", c.authenticationError),
+								},
+							})
+							if err != nil {
+								if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+									logger.Printf("Error writing response packet: %s\n", err)
+								}
 							}
+							return
 						}
-						return
+					}
+				}
+			}
+
+			// Should only have an impact on the client since the client doesn't send this packet type.
+			if c.inputRole == InputRoleClient {
+				if authInvalidPacket, isAuthInvalidPacket := packet.Data.(AuthenticationInvalidPacket); isAuthInvalidPacket {
+					if _, ok := responseHandlers.Load(packet.RespondingTo); !ok {
+						if errChan, ok := errorHandlers.Load(packet.RespondingTo); ok {
+							errChan.(chan error) <- errors.New(authInvalidPacket.Error)
+
+							// Clean up the response handlers if any
+							if _, hasResponseHandler := responseHandlers.Load(packet.RespondingTo); hasResponseHandler {
+								responseHandlers.Delete(packet.RespondingTo)
+							}
+
+							// Delete the error handler after it has been used
+							errorHandlers.Delete(packet.RespondingTo)
+						}
 					}
 				}
 			}

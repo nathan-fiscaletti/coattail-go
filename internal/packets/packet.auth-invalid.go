@@ -11,7 +11,9 @@ func init() {
 	gob.Register(AuthenticationInvalidPacket{})
 }
 
-type AuthenticationInvalidPacket struct{}
+type AuthenticationInvalidPacket struct {
+	Error string `json:"error"`
+}
 
 func (h AuthenticationInvalidPacket) Handle(ctx context.Context) (coattailtypes.Packet, error) {
 	return nil, nil
