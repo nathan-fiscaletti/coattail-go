@@ -45,7 +45,8 @@ func Run(app coattailtypes.App) error {
 	app.OnStart(ctx, h.LocalPeer)
 
 	// Block forever
-	select {}
+	<-ctx.Done()
+	return ctx.Err()
 }
 
 func createContext(app coattailtypes.App) (context.Context, error) {

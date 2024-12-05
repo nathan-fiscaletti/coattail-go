@@ -3,14 +3,22 @@ package authentication
 import (
 	"context"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"os"
 	"strings"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
+	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
+)
+
+const (
+	secretKeyFile = "secret.key"
 )
 
 var (
@@ -24,14 +32,34 @@ type Service struct {
 	secretKey []byte
 }
 
-func newService() (*Service, error) {
-	return &Service{
-		secretKey: []byte("secret"),
-	}, nil
+func newService(ctx context.Context) (*Service, error) {
+	service := &Service{}
+
+	// Load or generate secret key
+	err := service.loadSecretKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Issue a single token
+	// TODO: Remove this, for debugging only.
+	_, ipnet, err := net.ParseCIDR("127.0.0.1/32")
+	if err != nil {
+		return nil, err
+	}
+	token, err := service.Issue(ctx, ipnet)
+	if err != nil {
+		return nil, err
+	}
+	if logger, err := logging.GetLogger(ctx); err == nil {
+		logger.Printf("created dev token: %s", token)
+	}
+
+	return service, nil
 }
 
 func ContextWithService(ctx context.Context) (context.Context, error) {
-	auth, err := newService()
+	auth, err := newService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +76,7 @@ func GetService(ctx context.Context) (*Service, error) {
 	return auth, nil
 }
 
-func (s *Service) Issue(ipNet net.IPNet) (string, error) {
+func (s *Service) Issue(ctx context.Context, ipNet *net.IPNet) (string, error) {
 	h := hmac.New(sha256.New, s.secretKey)
 	h.Write([]byte(ipNet.String()))
 	signature := h.Sum(nil)
@@ -57,7 +85,7 @@ func (s *Service) Issue(ipNet net.IPNet) (string, error) {
 	return token, nil
 }
 
-func (s *Service) Authenticate(token string, source net.IP) (bool, error) {
+func (s *Service) Authenticate(ctx context.Context, token string, source net.IP) (bool, error) {
 	parts := strings.Split(token, ";")
 	if len(parts) != 2 {
 		return false, ErrInvalidToken
@@ -87,4 +115,67 @@ func (s *Service) Authenticate(token string, source net.IP) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (s *Service) loadSecretKey(ctx context.Context) error {
+	// check if the `secret.key` file exists
+	if _, err := os.Stat(secretKeyFile); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+
+		// if the file doesn't exist, generate a new key
+		key, err := s.generateKey(2048)
+		if err != nil {
+			return err
+		}
+
+		// write the key to a file
+		secretFile, err := os.Create(secretKeyFile)
+		if err != nil {
+			return err
+		}
+		defer secretFile.Close()
+
+		_, err = secretFile.Write(key)
+		if err != nil {
+			return err
+		}
+
+		if logger, err := logging.GetLogger(ctx); err == nil {
+			logger.Printf("generated new secret key: %s", key)
+		}
+	}
+
+	// Load the secret key
+	secretFile, err := os.Open(secretKeyFile)
+	if err != nil {
+		return err
+	}
+
+	s.secretKey, err = io.ReadAll(secretFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GenerateHMACKey generates a random key of the specified length for use with HMAC
+func (s *Service) generateKey(length int) ([]byte, error) {
+	// Ensure the key length is valid
+	if length <= 0 {
+		return nil, fmt.Errorf("key length must be greater than 0")
+	}
+
+	// Create a byte slice to hold the key
+	key := make([]byte, length)
+
+	// Fill the byte slice with secure random bytes
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate key: %w", err)
+	}
+
+	return key, nil
 }

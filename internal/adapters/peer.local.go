@@ -47,8 +47,6 @@ func loadPeers() ([]coattailtypes.PeerDetails, error) {
 
 	result := []coattailtypes.PeerDetails{}
 
-	fmt.Printf("cwd: %s\n", cwd)
-
 	peersFile := filepath.Join(cwd, "peers.yaml")
 	if _, err := os.Stat(peersFile); os.IsNotExist(err) {
 		return result, nil
@@ -319,7 +317,7 @@ func (i *LocalPeerAdapter) IssueToken(ctx context.Context, origin net.IPNet) (st
 		return "", err
 	}
 
-	return auth.Issue(origin)
+	return auth.Issue(ctx, &origin)
 }
 
 /* ====== Logger ====== */
