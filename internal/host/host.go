@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"net"
 	"net/http"
+	"os"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/host/api"
 	"github.com/nathan-fiscaletti/coattail-go/internal/host/config"
@@ -138,6 +140,11 @@ func (h *Host) startApiServer(ctx context.Context) error {
 	go func() {
 		if logger, err := logging.GetLogger(ctx); err == nil {
 			logger.Printf("starting api server at %v\n", h.Config.ApiAddress)
+		}
+
+		if logger, err := logging.GetLogger(ctx); err == nil {
+			apiLogger := log.New(os.Stdout, logger.Prefix()+"[API] ", log.LstdFlags)
+			ctx = context.WithValue(ctx, keys.LoggerKey, apiLogger)
 		}
 
 		apiMux := http.NewServeMux()

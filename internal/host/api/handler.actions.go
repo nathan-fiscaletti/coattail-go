@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -21,6 +22,10 @@ func NewActionsHandler(ctx context.Context, localPeer *coattailtypes.Peer) http.
 }
 
 func (h *ActionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if logger, _ := logging.GetLogger(h.ctx); logger != nil {
+		logger.Printf("GET /actions")
+	}
+
 	actions, err := h.localPeer.ListActions(h.ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
