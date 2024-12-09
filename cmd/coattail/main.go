@@ -14,15 +14,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func main() {
-	var rootCmd = &cobra.Command{
-		Use:   "coattail", // Command name
-		Short: "Coattail CLI",
-		Long: `The Coattail CLI can be used to create a new Coattail instance from the command line.
+const longDescription = `The Coattail CLI can be used to create a new Coattail instance from the command line.
 
 For more information, please visit: 
 
-    https://github.com/nathan-fiscaletti/coattail-go`,
+    https://github.com/nathan-fiscaletti/coattail-go`
+
+func main() {
+	var rootCmd = &cobra.Command{
+		Use:   "coattail",
+		Short: "Coattail CLI",
+		Long:  longDescription,
 		CompletionOptions: cobra.CompletionOptions{
 			HiddenDefaultCmd: true,
 		},
