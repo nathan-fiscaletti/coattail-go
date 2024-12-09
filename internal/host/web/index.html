@@ -20,11 +20,38 @@
                         });
                     });
             }
+
+            function getActions() {
+                // Call the rest api
+                const api = "http://localhost:8082/actions";
+
+                fetch(api)
+                    .then(response => response.json())
+                    .then(data => {
+                        const actions = document.getElementById("actions");
+                        actions.innerHTML = "";
+
+                        data.forEach(action => {
+                            const li = document.createElement("li");
+                            li.innerText = action;
+                            actions.appendChild(li);
+                        });
+                    });
+            }
+
+            function onLoad() {
+                getPeers();
+                getActions();
+            }
         </script>
     </head>
-    <body onload="getPeers()">
+    <body onload="onLoad()">
         <h1>Peers</h1>
         <ul id="peers">
+            
+        </ul>
+        <h1>Actions</h1>
+        <ul id="actions">
             
         </ul>
     </body>
