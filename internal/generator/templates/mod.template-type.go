@@ -2,7 +2,6 @@ package templates
 
 import (
 	"embed"
-	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -11,7 +10,7 @@ import (
 	"strings"
 )
 
-//go:embed mod-template
+//go:embed mod-template/* mod-template/.gitignore.tmpl
 var modTemplates embed.FS
 
 type ModTemplateData struct {
@@ -28,12 +27,6 @@ func NewModTemplate(data ModTemplateData) Template {
 }
 
 func (d *ModTemplateData) Fill(dir string) error {
-	// TODO: this logic should be abstracted somewhere or put into a
-	// TODO: common function so that each generator can use it.
-	// loop through each directory in the tmplFs and copy it to the dir
-	// each file in the directory with the extension ".tmpl" should be fille in using the template data
-	// if a file does not have the .tmpl extension, it should be copied as-is
-
 	modTemplateFs, err := fs.Sub(d.templates, "mod-template")
 	if err != nil {
 		return err
@@ -45,8 +38,6 @@ func (d *ModTemplateData) Fill(dir string) error {
 			return err
 		}
 
-		fmt.Println("path:", path)
-
 		// Skip directories
 		if _d.IsDir() {
 			// TODO: recurse into the directory
@@ -55,6 +46,7 @@ func (d *ModTemplateData) Fill(dir string) error {
 
 		// Check if the file ends with .tmpl
 		if !strings.HasSuffix(path, ".tmpl") {
+			// TODO: copy raw files that are not templates
 			return nil
 		}
 

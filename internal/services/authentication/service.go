@@ -141,10 +141,6 @@ func (s *Service) loadSecretKey(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
-		if logger, err := logging.GetLogger(ctx); err == nil {
-			logger.Printf("generated new secret key: %s", key)
-		}
 	}
 
 	// Load the secret key
