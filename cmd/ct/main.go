@@ -18,19 +18,27 @@ func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "ct", // Command name
 		Short: "Coattail CLI",
+		Long: `The Coattail CLI can be used to create a new Coattail instance from the command line.
+
+For more information, please visit: 
+
+    https://github.com/nathan-fiscaletti/coattail-go`,
+		CompletionOptions: cobra.CompletionOptions{
+			HiddenDefaultCmd: true,
+		},
 	}
 
 	// Add the 'new' command
 	var newCmd = &cobra.Command{
-		Use:   "new [path]",                     // Sub-command
+		Use:   "new [destination]",              // Sub-command
 		Short: "Create a new coattail instance", // Short description
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			var outputDir string = "."
+			var destination string = "."
 			if len(os.Args) > 0 {
-				outputDir = args[0]
+				destination = args[0]
 			}
-			generate(outputDir)
+			generate(destination)
 		},
 	}
 
@@ -44,16 +52,16 @@ func main() {
 	}
 }
 
-func generate(outputDir string) {
+func generate(destination string) {
 	logger := log.Default()
 
 	var err error
-	outputDir, err = filepath.Abs(outputDir)
+	destination, err = filepath.Abs(destination)
 	if err != nil {
 		panic(err)
 	}
 
-	logger.Printf("Creating new Coattail instance at: %v\n", outputDir)
+	logger.Printf("Creating new Coattail instance at: %v\n", destination)
 
 	info, ok := debug.ReadBuildInfo()
 
@@ -69,13 +77,13 @@ func generate(outputDir string) {
 		GoVersion:       strings.TrimPrefix(runtime.Version(), "go"),
 	}
 
-	if err := templates.NewModTemplate(modTemplate).Fill(outputDir); err != nil {
+	if err := templates.NewModTemplate(modTemplate).Fill(destination); err != nil {
 		panic(err)
 	}
 
 	if version == "(devel)" {
 		// delete existing go.mod file in outputDir
-		err := os.Remove(filepath.Join(outputDir, "go.mod"))
+		err := os.Remove(filepath.Join(destination, "go.mod"))
 		if err != nil {
 			if !os.IsNotExist(err) {
 				panic(err)
@@ -83,7 +91,7 @@ func generate(outputDir string) {
 		}
 
 		// write a new go.mod file
-		err = templates.WriteDevModFile(filepath.Join(outputDir, "go.mod"), modTemplate)
+		err = templates.WriteDevModFile(filepath.Join(destination, "go.mod"), modTemplate)
 		if err != nil {
 			panic(err)
 		}
@@ -91,7 +99,7 @@ func generate(outputDir string) {
 
 	// Run go mod tidy in the output directory
 	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Dir = outputDir
+	cmd.Dir = destination
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
