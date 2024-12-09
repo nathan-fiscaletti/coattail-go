@@ -9,11 +9,12 @@ import (
 	"strings"
 )
 
-//go:embed app-template/**/*
+//go:embed app-template
 var appTemplates embed.FS
 
 type AppTemplateData struct {
-	PackageName string
+	PackageName     string
+	CoattailVersion string
 
 	templates *embed.FS
 }
@@ -31,13 +32,14 @@ func (d *AppTemplateData) Fill(dir string) error {
 	// if a file does not have the .tmpl extension, it should be copied as-is
 
 	// loop through each directory in the tmplFs and copy it to the dir
-	err := fs.WalkDir(d.templates, ".", func(path string, _d fs.DirEntry, err error) error {
+	err := fs.WalkDir(d.templates, "app-template", func(path string, _d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Skip directories
 		if _d.IsDir() {
+			// TODO: recurse into the directory
 			return nil
 		}
 

@@ -1,17 +1,24 @@
 package main
 
 import (
+	"runtime/debug"
+
 	"github.com/nathan-fiscaletti/coattail-go/internal/generator/templates"
 )
 
 func main() {
-	new("c:/git-repos/coattail-go/.test")
+	if info, ok := debug.ReadBuildInfo(); ok {
+		new("c:/git-repos/personal/coattail-go/.test", info.Main.Version)
+	}
 }
 
-func new(path string) {
+// get package version
+
+func new(path string, ctVersion string) {
 	// copy all contents of template directory to specified path
 	tmpl := templates.NewAppTemplate(templates.AppTemplateData{
-		PackageName: "github.com/nathan-fiscaletti/coattail-go/coattail_app",
+		PackageName:     "github.com/nathan-fiscaletti/coattail-go/coattail_app",
+		CoattailVersion: ctVersion,
 	})
 
 	// TODO: Fix this after fixing the generators.
