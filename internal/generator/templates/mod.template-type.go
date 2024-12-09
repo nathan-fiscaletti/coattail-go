@@ -2,40 +2,50 @@ package templates
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-//go:embed app-template
-var appTemplates embed.FS
+//go:embed mod-template
+var modTemplates embed.FS
 
-type AppTemplateData struct {
+type ModTemplateData struct {
 	PackageName     string
 	CoattailVersion string
+	GoVersion       string
 
 	templates *embed.FS
 }
 
-func NewAppTemplate(data AppTemplateData) Template {
-	data.templates = &appTemplates
+func NewModTemplate(data ModTemplateData) Template {
+	data.templates = &modTemplates
 	return &data
 }
 
-func (d *AppTemplateData) Fill(dir string) error {
+func (d *ModTemplateData) Fill(dir string) error {
 	// TODO: this logic should be abstracted somewhere or put into a
 	// TODO: common function so that each generator can use it.
 	// loop through each directory in the tmplFs and copy it to the dir
 	// each file in the directory with the extension ".tmpl" should be fille in using the template data
 	// if a file does not have the .tmpl extension, it should be copied as-is
 
+	modTemplateFs, err := fs.Sub(d.templates, "mod-template")
+	if err != nil {
+		return err
+	}
+
 	// loop through each directory in the tmplFs and copy it to the dir
-	err := fs.WalkDir(d.templates, "app-template", func(path string, _d fs.DirEntry, err error) error {
+	err = fs.WalkDir(modTemplateFs, ".", func(path string, _d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
+
+		fmt.Println("path:", path)
 
 		// Skip directories
 		if _d.IsDir() {
@@ -58,7 +68,11 @@ func (d *AppTemplateData) Fill(dir string) error {
 		}
 
 		// Read the file content from
-		content, err := d.templates.ReadFile(path)
+		file, err := modTemplateFs.Open(path)
+		if err != nil {
+			return err
+		}
+		content, err := io.ReadAll(file)
 		if err != nil {
 			return err
 		}
