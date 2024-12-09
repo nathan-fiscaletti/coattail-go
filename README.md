@@ -1,5 +1,10 @@
 # Coattail
 
+## Install
+
+```bash
+$ go install github.com/nathan-fiscaletti/coattail-go/cmd/coattail@latest
+```
 
 ## Architecture
 ![Architecture](./arch.png)

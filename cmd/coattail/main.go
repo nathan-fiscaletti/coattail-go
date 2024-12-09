@@ -16,7 +16,7 @@ import (
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:   "ct", // Command name
+		Use:   "coattail", // Command name
 		Short: "Coattail CLI",
 		Long: `The Coattail CLI can be used to create a new Coattail instance from the command line.
 
