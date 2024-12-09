@@ -13,8 +13,8 @@ $ go install github.com/nathan-fiscaletti/coattail-go/cmd/coattail@latest
 ## Creating a new Coattail instance
 
 ```bash
-$ mkdir ct-instance && cd ct-instance
-$ coattail new .
+$ mkdir ct-instance
+$ coattail new ./ct-instance
 ```
 
 ## Running a Coattail instance
