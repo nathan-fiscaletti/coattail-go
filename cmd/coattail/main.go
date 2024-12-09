@@ -15,7 +15,7 @@ import (
 func main() {
 	// get input path from arg[0]
 	var outputDir string = "."
-	if len(os.Args) != 2 {
+	if len(os.Args) == 2 {
 		outputDir = os.Args[1]
 	}
 
