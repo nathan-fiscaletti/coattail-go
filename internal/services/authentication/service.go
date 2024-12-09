@@ -36,7 +36,7 @@ func newService(ctx context.Context) (*Service, error) {
 	service := &Service{}
 
 	// Load or generate secret key
-	err := service.loadSecretKey(ctx)
+	err := service.loadSecretKey()
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (s *Service) Authenticate(ctx context.Context, token string, source net.IP)
 	return true, nil
 }
 
-func (s *Service) loadSecretKey(ctx context.Context) error {
+func (s *Service) loadSecretKey() error {
 	// check if the `secret.key` file exists
 	if _, err := os.Stat(secretKeyFile); err != nil {
 		if !os.IsNotExist(err) {
