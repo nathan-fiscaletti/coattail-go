@@ -48,7 +48,7 @@ func main() {
 		Use:   "generate-actions",
 		Short: "Generates actions from the actions.yaml file",
 		Run: func(cmd *cobra.Command, args []string) {
-			generateActions("./internal/actions")
+			generateActions()
 		},
 	}
 
@@ -62,8 +62,24 @@ func main() {
 	}
 }
 
-func generateActions(destination string) {
+func generateActions() {
 	logger := log.Default()
+
+	// make sure that host-config.yaml exists
+	hostConfigPath := "./host-config.yaml"
+	if _, err := os.Stat(hostConfigPath); os.IsNotExist(err) {
+		logger.Printf("Error: host-config.yaml does not exist. Are you in a coattail instance?.\n")
+		os.Exit(1)
+	}
+
+	// make sure actions.yaml exists
+	actionsYamlPath := "./actions.yaml"
+	if _, err := os.Stat(actionsYamlPath); os.IsNotExist(err) {
+		logger.Printf("Error: actions.yaml does not exist. Are you in a coattail instance?.\n")
+		os.Exit(1)
+	}
+
+	destination := "./internal/actions"
 
 	var err error
 	destination, err = filepath.Abs(destination)

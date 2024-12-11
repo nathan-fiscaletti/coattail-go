@@ -10,12 +10,12 @@ import (
 )
 
 func RegisterActions(ctx context.Context, local *coattailtypes.Peer) error {
+    var err error
     {{ range $action := .Actions }}
-    err := local.RegisterAction(ctx, "{{ $action.Name }}", coattailtypes.NewAction[{{- if $action.InputType }}{{ $action.InputType }} {{ else }}any {{- end }}, {{ $action.OutputType }}](&actions.{{ $action.Name }}{}))
+    err = local.RegisterAction(ctx, "{{ $action.Name }}", coattailtypes.NewAction[{{- if $action.InputType }}{{ $action.InputType }} {{ else }}any{{end}}, {{- if $action.OutputType }} {{ $action.OutputType }}{{else}} any{{end}}](&actions.{{ $action.Name }}{}))
     if err != nil {
         return err
     }
     {{ end }}
-
     return nil
 }
