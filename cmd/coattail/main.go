@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
-	"runtime/debug"
-	"strings"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/generator/templates"
+	"github.com/nathan-fiscaletti/coattail-go/internal/generator"
 	"github.com/spf13/cobra"
 )
 
@@ -47,11 +43,41 @@ func main() {
 	// Attach the command to the root
 	rootCmd.AddCommand(newCmd)
 
+	// Add the create-action command
+	var generateActions = &cobra.Command{
+		Use:   "generate-actions",
+		Short: "Generates actions from the actions.yaml file",
+		Run: func(cmd *cobra.Command, args []string) {
+			generateActions("./internal/actions")
+		},
+	}
+
+	// Attach the command to the root
+	rootCmd.AddCommand(generateActions)
+
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func generateActions(destination string) {
+	logger := log.Default()
+
+	var err error
+	destination, err = filepath.Abs(destination)
+	if err != nil {
+		panic(err)
+	}
+
+	err = generator.GenerateActions(destination, "./actions.yaml")
+	if err != nil {
+		logger.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	logger.Printf("Successfully generated actions.\n")
 }
 
 func generate(destination string) {
@@ -65,47 +91,11 @@ func generate(destination string) {
 
 	logger.Printf("Creating new Coattail instance at: %v\n", destination)
 
-	info, ok := debug.ReadBuildInfo()
-
-	if !ok {
-		logger.Println("Failed to read build info")
+	err = generator.GenerateNewMod(destination)
+	if err != nil {
+		logger.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	version := info.Main.Version
-	modTemplate := templates.ModTemplateData{
-		PackageName:     "coattail_app",
-		CoattailVersion: version,
-		GoVersion:       strings.TrimPrefix(runtime.Version(), "go"),
-	}
-
-	if err := templates.NewModTemplate(modTemplate).Fill(destination); err != nil {
-		panic(err)
-	}
-
-	if version == "(devel)" {
-		// delete existing go.mod file in outputDir
-		err := os.Remove(filepath.Join(destination, "go.mod"))
-		if err != nil {
-			if !os.IsNotExist(err) {
-				panic(err)
-			}
-		}
-
-		// write a new go.mod file
-		err = templates.WriteDevModFile(filepath.Join(destination, "go.mod"), modTemplate)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	// Run go mod tidy in the output directory
-	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Dir = destination
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		panic(err)
-	}
+	logger.Printf("Successfully created new Coattail instance at: %v\n", destination)
 }

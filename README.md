@@ -2,7 +2,7 @@
 
 ## What is Coattail?
 
-It's a peer-to-peer communication protocol designed for microservices within distributed systems. It allows services to directly communicate with each other as peers, similar to gRPC but more streamlined and P2P-focused.
+Coattail is a peer-to-peer communication mechanism designed for go microservices within distributed systems. It allows services to directly communicate with each other as peers.
 
 ## Install
 

@@ -109,20 +109,20 @@ type ReceiverManager interface {
 }
 
 type PeerManager interface {
-	// GetPeer returns a peer by its ID. The ID of the peer should be provided as
-	// the first argument. The return value is the peer, or an error if the peer
-	// could not be found.
-	GetPeer(ctx context.Context, id string) (*Peer, error)
+	// GetPeer returns a peer by its address. The address of the peer should be
+	// provided as the first argument. The return value is the peer, or an error
+	// if the peer could not be found.
+	GetPeer(ctx context.Context, address string) (*Peer, error)
 
 	// GetPeerBy returns a peer by a predicate. The predicate should be provided
 	// as the first argument. The return value is the peer, or an error if the peer
 	// could not be found.
 	GetPeerBy(ctx context.Context, predicate func(PeerDetails) bool) (*Peer, error)
 
-	// HasPeer checks if a peer is available on the peer. The ID of the peer should
-	// be provided as the first argument. The return value is true if the peer is
-	// available, or false if it is not.
-	HasPeer(ctx context.Context, id string) (bool, error)
+	// HasPeer checks if a peer is available on the peer. The address of the peer
+	// should be provided as the first argument. The return value is true if the
+	// peer is available, or false if it is not.
+	HasPeer(ctx context.Context, address string) (bool, error)
 
 	// ListPeers returns a list of all peers that are available on the peer. The
 	// return value is a list of peers, or an error if the list could not be

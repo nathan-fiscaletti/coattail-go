@@ -1,0 +1,15 @@
+package actions
+
+import (
+    "coattail_app/pkg/types"
+)
+
+type {{ .Name }} struct {}
+
+func (a *{{ .Name }}) Execute({{- if .InputType }}arg *{{ .InputType }} {{ else }}_ *any {{- end }}) {{- if .OutputType }} ({{ .OutputType }}, error) {{ else }} error {{ end }} {
+	{{- if .OutputType }}
+	return {{ .OutputType }}{}, nil
+	{{- else }}
+	return nil
+	{{- end }}
+}

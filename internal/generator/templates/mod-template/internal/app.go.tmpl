@@ -3,16 +3,14 @@ package internal
 import (
 	"context"
 
-	"{{.PackageName}}/pkg/types"
-
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
 type CT1 struct{}
 
 func (c *CT1) OnStart(ctx context.Context, local *coattailtypes.Peer) {
-	// Add an action to the local peer.
-	err := local.RegisterAction(ctx, "test", coattailtypes.NewAction[any, types.Message](&TestAction{}))
+	// Register actions from the action registry.
+	err := RegisterActions(ctx, local)
 	if err != nil {
 		panic(err)
 	}
