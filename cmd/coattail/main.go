@@ -68,14 +68,14 @@ func generateUnits() {
 	// make sure that host-config.yaml exists
 	hostConfigPath := "./host-config.yaml"
 	if _, err := os.Stat(hostConfigPath); os.IsNotExist(err) {
-		logger.Printf("Error: host-config.yaml does not exist. Are you in a coattail instance?.\n")
+		logger.Printf("Error: host-config.yaml does not exist. Are you in a coattail instance?\n")
 		os.Exit(1)
 	}
 
 	// make sure actions.yaml exists
 	actionsYamlPath := "./actions.yaml"
 	if _, err := os.Stat(actionsYamlPath); os.IsNotExist(err) {
-		logger.Printf("Error: actions.yaml does not exist. Are you in a coattail instance?.\n")
+		logger.Printf("Error: actions.yaml does not exist. Are you in a coattail instance?\n")
 		os.Exit(1)
 	}
 

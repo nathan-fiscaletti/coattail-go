@@ -109,5 +109,15 @@ func GenerateUnits(root string) error {
 		return fmt.Errorf("failed to generate registry: %w", err)
 	}
 
+	// ====== SDK ======
+
+	sdkTemplate := templates.SdkTemplateData{
+		Actions: actions.Actions,
+	}
+
+	if err := templates.NewSdkTemplate(sdkTemplate).Fill(filepath.Join(root, "pkg", "sdk")); err != nil {
+		return fmt.Errorf("failed to generate sdk: %w", err)
+	}
+
 	return nil
 }
