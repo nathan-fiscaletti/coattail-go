@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const longDescription = `The Coattail CLI can be used to create a new Coattail instance from the command line.
+const longDescription = `The Coattail CLI can be used to create a new Coattail instance or manage an existing one.
 
 For more information, please visit: 
 
