@@ -100,6 +100,8 @@ func GenerateUnits(root string) error {
 
 	// ====== REGISTRY ======
 
+	logger.Printf("Generating registry\n")
+
 	registryTemplate := templates.RegistryTemplateData{
 		Actions:   actions.Actions,
 		Receivers: receivers.Receivers,
@@ -109,7 +111,11 @@ func GenerateUnits(root string) error {
 		return fmt.Errorf("failed to generate registry: %w", err)
 	}
 
+	logger.Printf("Registry generated successfully.\n")
+
 	// ====== SDK ======
+
+	logger.Printf("Generating SDK\n")
 
 	sdkTemplate := templates.SdkTemplateData{
 		Actions: actions.Actions,
@@ -118,6 +124,8 @@ func GenerateUnits(root string) error {
 	if err := templates.NewSdkTemplate(sdkTemplate).Fill(filepath.Join(root, "pkg", "sdk")); err != nil {
 		return fmt.Errorf("failed to generate sdk: %w", err)
 	}
+
+	logger.Printf("SDK generated successfully.\n")
 
 	return nil
 }

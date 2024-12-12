@@ -85,7 +85,7 @@ func generateUnits() {
 		os.Exit(1)
 	}
 
-	logger.Printf("Successfully generated actions and receivers.\n")
+	logger.Printf("Code generation completed successfully.\n")
 }
 
 func generate(destination string) {
