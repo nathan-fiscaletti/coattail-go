@@ -43,17 +43,17 @@ func main() {
 	// Attach the command to the root
 	rootCmd.AddCommand(newCmd)
 
-	// Add the create-action command
-	var generateActions = &cobra.Command{
-		Use:   "generate-actions",
-		Short: "Generates actions from the actions.yaml file",
+	// Add the generate command
+	var generateUnits = &cobra.Command{
+		Use:   "generate",
+		Short: "Generates actions and receivers from the actions.yaml and receivers.yaml files",
 		Run: func(cmd *cobra.Command, args []string) {
-			generateActions()
+			generateUnits()
 		},
 	}
 
 	// Attach the command to the root
-	rootCmd.AddCommand(generateActions)
+	rootCmd.AddCommand(generateUnits)
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
@@ -62,7 +62,7 @@ func main() {
 	}
 }
 
-func generateActions() {
+func generateUnits() {
 	logger := log.Default()
 
 	// make sure that host-config.yaml exists
@@ -79,21 +79,13 @@ func generateActions() {
 		os.Exit(1)
 	}
 
-	destination := "./internal/actions"
-
-	var err error
-	destination, err = filepath.Abs(destination)
-	if err != nil {
-		panic(err)
-	}
-
-	err = generator.GenerateActions(destination, "./actions.yaml")
+	err := generator.GenerateUnits("./")
 	if err != nil {
 		logger.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	logger.Printf("Successfully generated actions.\n")
+	logger.Printf("Successfully generated actions and receivers.\n")
 }
 
 func generate(destination string) {

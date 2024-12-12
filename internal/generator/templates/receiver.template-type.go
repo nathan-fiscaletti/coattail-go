@@ -2,36 +2,38 @@ package templates
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-//go:embed registry-template/*
-var registryTemplates embed.FS
+//go:embed receiver-template/*
+var receiverTemplates embed.FS
 
-type RegistryTemplateData struct {
-	Actions   []ActionTemplateData   `yaml:"actions"`
-	Receivers []ReceiverTemplateData `yaml:"receivers"`
+type ReceiverTemplateData struct {
+	Name      string `yaml:"name"`
+	InputType string `yaml:"input"`
 
 	templates *embed.FS
 }
 
-func NewRegistryTemplate(data RegistryTemplateData) Template {
-	data.templates = &registryTemplates
+func NewReceiverTemplate(data ReceiverTemplateData) Template {
+	data.templates = &receiverTemplates
 	return &data
 }
 
-func (d *RegistryTemplateData) Fill(dir string) error {
-	modTemplateFs, err := fs.Sub(d.templates, "registry-template")
+func (d *ReceiverTemplateData) Fill(dir string) error {
+	modTemplateFs, err := fs.Sub(d.templates, "receiver-template")
 	if err != nil {
 		return err
 	}
 
-	inputTemplate := "registry.go.tmpl"
-	filename := "registry.go"
+	inputTemplate := "receiver.go.tmpl"
+	filename := fmt.Sprintf("receiver.%s.go", strings.ToLower(d.Name))
 	outputFile := filepath.Join(dir, filename)
 
 	// Create the target directory if it doesn't exist

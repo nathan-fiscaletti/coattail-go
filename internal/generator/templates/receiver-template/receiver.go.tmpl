@@ -1,0 +1,11 @@
+package receivers
+{{ if or .InputType .OutputType }}
+import (
+    "coattail_app/pkg/types"
+)
+{{ end }}
+type {{ .Name }} struct {}
+
+func (a *{{ .Name }}) Execute({{- if .InputType }}arg *{{ .InputType }}{{ else }}_ *any {{- end }}) error {
+	return nil
+}

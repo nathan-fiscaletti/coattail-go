@@ -2,17 +2,27 @@
 package internal
 
 import (
-	"coattail_app/internal/actions"
+    {{if gt (len .Actions) 0}}"coattail_app/internal/actions"{{end}}
+    {{if gt (len .Receivers) 0}}"coattail_app/internal/receivers"{{end}}
 	"coattail_app/pkg/types"
 	"context"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
-func RegisterActions(ctx context.Context, local *coattailtypes.Peer) error {
+func RegisterUnits(ctx context.Context, local *coattailtypes.Peer) error {
     var err error
+
+    // Register actions
     {{ range $action := .Actions }}
     err = local.RegisterAction(ctx, "{{ $action.Name }}", coattailtypes.NewAction[{{- if $action.InputType }}{{ $action.InputType }} {{ else }}any{{end}}, {{- if $action.OutputType }} {{ $action.OutputType }}{{else}} any{{end}}](&actions.{{ $action.Name }}{}))
+    if err != nil {
+        return err
+    }
+    {{ end }}
+    // Register receivers
+    {{ range $receiver := .Receivers }}
+    err = local.RegisterReceiver(ctx, "{{ $receiver.Name }}", coattailtypes.NewReceiver[{{- if $receiver.InputType }}{{ $receiver.InputType }}{{ else }}any{{end}}](&receivers.{{ $receiver.Name }}{}))
     if err != nil {
         return err
     }

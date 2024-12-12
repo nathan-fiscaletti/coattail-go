@@ -58,14 +58,14 @@ func GenerateNewMod(destination string) error {
 		return fmt.Errorf("failed to run go mod tidy: %w", err)
 	}
 
-	// Run coattail generate-actions in the output directory
-	cmd = exec.Command("coattail", "generate-actions")
+	// Run coattail generate in the output directory
+	cmd = exec.Command("coattail", "generate")
 	cmd.Dir = destination
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("failed to run coattail generate-actions: %w", err)
+		return fmt.Errorf("failed to run coattail generate: %w", err)
 	}
 
 	return nil

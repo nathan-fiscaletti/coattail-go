@@ -10,7 +10,7 @@ type CT1 struct{}
 
 func (c *CT1) OnStart(ctx context.Context, local *coattailtypes.Peer) {
 	// Register actions from the action registry.
-	err := RegisterActions(ctx, local)
+	err := RegisterUnits(ctx, local)
 	if err != nil {
 		panic(err)
 	}
