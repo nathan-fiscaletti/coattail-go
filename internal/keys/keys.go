@@ -9,4 +9,5 @@ const (
 	DatabaseKey
 	ConnectionKey
 	AuthenticationKey
+	PermissionsKey
 )

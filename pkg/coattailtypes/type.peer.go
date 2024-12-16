@@ -3,8 +3,8 @@ package coattailtypes
 import (
 	"context"
 	"log"
-	"net"
 
+	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 )
 
@@ -136,7 +136,7 @@ type PeerManager interface {
 }
 
 type CredentialManager interface {
-	IssueToken(ctx context.Context, origin net.IPNet) (string, error)
+	IssueToken(ctx context.Context, claims authentication.Claims) (*authentication.Token, error)
 }
 
 type LogManager interface {

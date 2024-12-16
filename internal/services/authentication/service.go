@@ -2,19 +2,17 @@ package authentication
 
 import (
 	"context"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"strings"
+	"time"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
+	"github.com/nathan-fiscaletti/coattail-go/internal/services/permission"
 )
 
 const (
@@ -26,6 +24,8 @@ var (
 	ErrInvalidToken           = errors.New("invalid token")
 	ErrInvalidSource          = errors.New("invalid source")
 	ErrInvalidSignature       = errors.New("invalid signature")
+	ErrInvalidPermissions     = errors.New("invalid permissions")
+	ErrTokenExpired           = errors.New("token expired")
 )
 
 type Service struct {
@@ -43,11 +43,12 @@ func newService(ctx context.Context) (*Service, error) {
 
 	// Issue a single token
 	// TODO: Remove this, for debugging only.
-	_, ipnet, err := net.ParseCIDR("127.0.0.1/32")
-	if err != nil {
-		return nil, err
-	}
-	token, err := service.Issue(ctx, ipnet)
+	_, ipnet, _ := net.ParseCIDR("127.0.0.1/32")
+	token, err := service.Issue(ctx, Claims{
+		AuthorizedNetwork: *ipnet,
+		Permitted:         permission.PermissionMask(permission.All),
+		Expiry:            time.Now().Add(time.Hour * 24),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +59,7 @@ func newService(ctx context.Context) (*Service, error) {
 	return service, nil
 }
 
+// ContextWithService returns a context with the authentication service.
 func ContextWithService(ctx context.Context) (context.Context, error) {
 	auth, err := newService(ctx)
 	if err != nil {
@@ -67,6 +69,7 @@ func ContextWithService(ctx context.Context) (context.Context, error) {
 	return context.WithValue(ctx, keys.AuthenticationKey, auth), nil
 }
 
+// GetService returns the authentication service from the context.
 func GetService(ctx context.Context) (*Service, error) {
 	auth, ok := ctx.Value(keys.AuthenticationKey).(*Service)
 	if !ok {
@@ -76,45 +79,43 @@ func GetService(ctx context.Context) (*Service, error) {
 	return auth, nil
 }
 
-func (s *Service) Issue(ctx context.Context, ipNet *net.IPNet) (string, error) {
-	h := hmac.New(sha256.New, s.secretKey)
-	h.Write([]byte(ipNet.String()))
-	signature := h.Sum(nil)
-
-	token := fmt.Sprintf("%s;%s", ipNet.String(), base64.StdEncoding.EncodeToString(signature))
-	return token, nil
+// Issue issues a token with the provided claims.
+func (s *Service) Issue(ctx context.Context, claims Claims) (*Token, error) {
+	return NewToken(claims, s.secretKey)
 }
 
-func (s *Service) Authenticate(ctx context.Context, token string, source net.IP) (bool, error) {
-	parts := strings.Split(token, ";")
-	if len(parts) != 2 {
-		return false, ErrInvalidToken
-	}
+// AuthenticationResult is the result of authenticating a token.
+type AuthenticationResult struct {
+	// Authenticated is true if the token was authenticated.
+	Authenticated bool
+	// Token is the token that was authenticated.
+	Token *Token
+}
 
-	_, ipNet, err := net.ParseCIDR(parts[0])
+// Authenticate authenticates a token.
+func (s *Service) Authenticate(ctx context.Context, tokenStr string, source net.IP) (*AuthenticationResult, error) {
+	token, err := NewTokenFromString(tokenStr)
 	if err != nil {
-		return false, ErrInvalidToken
+		return nil, err
 	}
 
-	if !ipNet.Contains(source) {
-		return false, ErrInvalidSource
+	if err := token.VerifySignature(s.secretKey); err != nil {
+		return nil, ErrInvalidToken
 	}
 
-	signatureB64 := parts[1]
-	signature, err := base64.StdEncoding.DecodeString(signatureB64)
-	if err != nil {
-		return false, ErrInvalidSignature
+	now := time.Now()
+	if now.Before(token.Expiry) || now.After(token.Expiry) {
+		return nil, ErrTokenExpired
 	}
 
-	h := hmac.New(sha256.New, s.secretKey)
-	h.Write([]byte(ipNet.String()))
-	expectedSignature := h.Sum(nil)
-
-	if !hmac.Equal(expectedSignature, []byte(signature)) {
-		return false, ErrInvalidSignature
+	if !token.AuthorizedNetwork.Contains(source) {
+		return nil, ErrInvalidSource
 	}
 
-	return true, nil
+	return &AuthenticationResult{
+		Authenticated: true,
+		Token:         token,
+	}, nil
 }
 
 func (s *Service) loadSecretKey() error {

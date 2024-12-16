@@ -9,6 +9,7 @@ import (
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/internal/packets"
+	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 	"github.com/samber/lo"
@@ -239,8 +240,8 @@ func (i *RemotePeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Su
 
 /* ====== Credentials ====== */
 
-func (i *RemotePeerAdapter) IssueToken(ctx context.Context, origin net.IPNet) (string, error) {
-	return "", ErrAccessDenied
+func (i *RemotePeerAdapter) IssueToken(ctx context.Context, claims authentication.Claims) (*authentication.Token, error) {
+	return nil, ErrAccessDenied
 }
 
 /* ====== Logger ====== */

@@ -15,6 +15,7 @@ import (
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
+	"github.com/nathan-fiscaletti/coattail-go/internal/services/permission"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
@@ -36,6 +37,7 @@ type Handler struct {
 	inputRole           HandlerInputRole
 	conn                net.Conn
 	authenticated       bool
+	permissions         permission.Permissions
 	authenticationError string
 	codec               *StreamCodec
 	wg                  sync.WaitGroup
@@ -244,6 +246,8 @@ func (c *Handler) startAuthentication() {
 	}
 
 	c.authenticated = respPacket.Authenticated
+	c.permissions = permission.GetPermissions(respPacket.Permitted)
+	c.ctx = permission.ContextWithPermissions(c.ctx, c.permissions)
 }
 
 func (c *Handler) startOutput(logPackets bool) {

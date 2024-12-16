@@ -14,6 +14,7 @@ func init() {
 
 type AuthenticationResponsePacket struct {
 	Authenticated bool   `json:"authenticated"`
+	Permitted     int32  `json:"permitted"`
 	Error         string `json:"error"`
 }
 
@@ -22,6 +23,11 @@ func (h AuthenticationResponsePacket) Handle(ctx context.Context) (coattailtypes
 		if logger, _ := logging.GetLogger(ctx); logger != nil {
 			logger.Printf("authentication failed: %s", h.Error)
 		}
+		return nil, nil
+	}
+
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		logger.Printf("permissions granted: %d", h.Permitted)
 	}
 
 	return nil, nil

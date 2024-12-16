@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"path/filepath"
 
@@ -311,13 +310,13 @@ func (i *LocalPeerAdapter) Subscribe(ctx context.Context, sub coattailmodels.Sub
 
 /* ====== Credentials ====== */
 
-func (i *LocalPeerAdapter) IssueToken(ctx context.Context, origin net.IPNet) (string, error) {
+func (i *LocalPeerAdapter) IssueToken(ctx context.Context, claims authentication.Claims) (*authentication.Token, error) {
 	auth, err := authentication.GetService(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return auth.Issue(ctx, &origin)
+	return auth.Issue(ctx, claims)
 }
 
 /* ====== Logger ====== */
