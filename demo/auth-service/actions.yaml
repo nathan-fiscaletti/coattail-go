@@ -1,0 +1,4 @@
+actions:
+  - name: Authenticate
+    input: types.Request
+    output: types.Response

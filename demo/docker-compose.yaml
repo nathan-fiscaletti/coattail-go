@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    environment:
+      - GO111MODULE=on
+      - CGO_ENABLED=1
+      - GOOS=linux
+      - GOARCH=amd64
+    ports:
+      - "5424:5423"
+      - "8084:8082"
+      - "8085:8083"
+    command: ["./auth-service"]
+    networks:
+      coattail-demo:
+        ipv4_address: 192.168.100.2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  web-service:
+    build:
+      context: ./web-service
+      dockerfile: Dockerfile
+    environment:
+      - GO111MODULE=on
+      - CGO_ENABLED=1
+      - GOOS=linux
+      - GOARCH=amd64
+    ports:
+      - "5425:5423"
+      - "8086:8082"
+      - "8087:8083"
+    command: ["./web-service"]
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    networks:
+      coattail-demo:
+        ipv4_address: 192.168.100.3
+
+networks:
+  coattail-demo:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24

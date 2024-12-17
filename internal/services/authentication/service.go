@@ -43,11 +43,11 @@ func newService(ctx context.Context) (*Service, error) {
 
 	// Issue a single token
 	// TODO: Remove this, for debugging only.
-	_, ipnet, _ := net.ParseCIDR("127.0.0.1/32")
+	_, ipnet, _ := net.ParseCIDR("192.168.100.0/24")
 	token, err := service.Issue(ctx, Claims{
 		AuthorizedNetwork: *ipnet,
 		Permitted:         permission.PermissionMask(permission.All),
-		Expiry:            time.Now().Add(time.Hour * 24),
+		Expiry:            time.Now().AddDate(100, 0, 0),
 	})
 	if err != nil {
 		return nil, err

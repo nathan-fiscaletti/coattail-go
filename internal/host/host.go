@@ -149,6 +149,7 @@ func (h *Host) startApiServer(ctx context.Context) error {
 
 		apiMux := http.NewServeMux()
 
+		apiMux.Handle("/healthcheck", api.NewHealthCheckHandler(ctx, h.LocalPeer))
 		apiMux.Handle("/peers", api.NewPeersHandler(ctx, h.LocalPeer))
 		apiMux.Handle("/actions", api.NewActionsHandler(ctx, h.LocalPeer))
 

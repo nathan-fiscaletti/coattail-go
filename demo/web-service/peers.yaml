@@ -1,0 +1,7 @@
+# Example:
+# peers:
+#   - address: 127.0.0.1:5244
+#     token: "127.0.0.1/32;x6CBRUnZr9xoNpZ/f8UIhGouOi9E3E+Hn7uhK4dbvmA="
+peers:
+  - address: 192.168.100.2:5243
+    token: hLFBdXRob3JpemVkTmV0d29ya4KiSVDEDTE5Mi4xNjguMTAwLjCkTWFza8QE////AKlQZXJtaXR0ZWTSAAAAB65BdXRob3JpemF0aW9uc8CmRXhwaXJ51/9KXq8hI3mD7Q==.JuqTdpAAoSziK8F5Z4xKXiqWNOpz+iy4IQ5+9857BwA=

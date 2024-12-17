@@ -1,0 +1,12 @@
+version: "3"
+
+tasks:
+  run:
+    desc: Run the local peer
+    cmd: go run ./cmd
+    dir: ./
+
+  generate:
+    desc: Generate actions and receivers from the actions.yaml and receivers.yaml files
+    cmd: coattail generate
+    dir: ./
