@@ -3,6 +3,8 @@ FROM golang:1.23.2-alpine
 
 # Install build tools required for CGO
 RUN apk add --no-cache build-base
+# Install curl for healthcheck
+RUN apk add --no-cache curl
 
 # Set environment variables for Go
 ENV GO111MODULE=on \

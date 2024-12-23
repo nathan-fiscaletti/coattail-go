@@ -2,7 +2,7 @@ package internal
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
@@ -25,15 +25,17 @@ func (c *CT1) OnStart(ctx context.Context, local *coattailtypes.Peer) {
 		Authenticated bool `json:"authenticated"`
 	}
 
+	log.Default().Println("Running action Authenticate")
 	response, err := p.Run(ctx, "Authenticate", struct {
 		Password string `json:"password"`
 	}{Password: "password"})
 	if err != nil {
 		panic(err)
 	}
+	log.Default().Println("Authenticate responded")
 
 	if res, ok := response.(Response); ok {
-		fmt.Println("Authenticated: ", res.Authenticated)
+		log.Default().Println("Authenticated: ", res.Authenticated)
 	} else {
 		panic("unexpected response type")
 	}

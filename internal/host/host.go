@@ -136,6 +136,15 @@ func (h *Host) startWebServer(ctx context.Context) error {
 	return nil
 }
 
+func loggingMiddleware(ctx context.Context, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if logger, err := logging.GetLogger(ctx); err == nil {
+			logger.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		}
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func (h *Host) startApiServer(ctx context.Context) error {
 	go func() {
 		if logger, err := logging.GetLogger(ctx); err == nil {
@@ -149,9 +158,9 @@ func (h *Host) startApiServer(ctx context.Context) error {
 
 		apiMux := http.NewServeMux()
 
-		apiMux.Handle("/healthcheck", api.NewHealthCheckHandler(ctx, h.LocalPeer))
-		apiMux.Handle("/peers", api.NewPeersHandler(ctx, h.LocalPeer))
-		apiMux.Handle("/actions", api.NewActionsHandler(ctx, h.LocalPeer))
+		apiMux.Handle("/healthcheck", loggingMiddleware(ctx, api.NewHealthCheckHandler(ctx, h.LocalPeer)))
+		apiMux.Handle("/peers", loggingMiddleware(ctx, api.NewPeersHandler(ctx, h.LocalPeer)))
+		apiMux.Handle("/actions", loggingMiddleware(ctx, api.NewActionsHandler(ctx, h.LocalPeer)))
 
 		err := http.ListenAndServe(h.Config.ApiAddress, apiMux)
 		if err != nil {

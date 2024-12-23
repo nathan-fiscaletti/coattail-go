@@ -1,6 +1,6 @@
 module coattail_app
 
-require github.com/nathan-fiscaletti/coattail-go v0.0.1
+require github.com/nathan-fiscaletti/coattail-go v0.0.2
 
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect

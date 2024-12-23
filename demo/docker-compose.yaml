@@ -11,7 +11,7 @@ services:
       - GOOS=linux
       - GOARCH=amd64
     ports:
-      - "5424:5423"
+      - "5244:5243"
       - "8084:8082"
       - "8085:8083"
     command: ["./auth-service"]
@@ -35,7 +35,7 @@ services:
       - GOOS=linux
       - GOARCH=amd64
     ports:
-      - "5425:5423"
+      - "5245:5243"
       - "8086:8082"
       - "8087:8083"
     command: ["./web-service"]
