@@ -11,4 +11,4 @@ tasks:
   update-token:
     internal: true
     dir: demo
-    cmd: go run ./cmd/util/fill.go
+    cmd: go run .scripts/generate-web-peers.go
