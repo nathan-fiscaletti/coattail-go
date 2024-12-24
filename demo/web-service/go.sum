@@ -15,8 +15,8 @@ github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
-github.com/nathan-fiscaletti/coattail-go v0.0.2 h1:mfhMdkofaTk0RmZ0Of6cSKQy7eaaUjb7FpPHFop68S4=
-github.com/nathan-fiscaletti/coattail-go v0.0.2/go.mod h1:ztvIdgQfhK2Kp2r7RglGSlpRW0hXkRi8o+lyqHg5BA4=
+github.com/nathan-fiscaletti/coattail-go v0.0.3 h1:CEHNpamiAm6KQnuEPUhsHKAhD697vv72DBOtbqMwjGc=
+github.com/nathan-fiscaletti/coattail-go v0.0.3/go.mod h1:t7QenqE947ufwaOHgEmNjYtQCJwsjvCwotwGKoWI1sc=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/samber/lo v1.47.0 h1:z7RynLwP5nbyRscyvcD043DWYoOcYRv3mV8lBeqOCLc=

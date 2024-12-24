@@ -13,7 +13,7 @@ func main() {
 	peers := coattailtypes.PeersFile{
 		Peers: []coattailtypes.PeerDetails{{
 			Address: "192.168.100.2:5243",
-			Token:   api.CreateToken(filepath.Join(".", "auth-service", "secret.key"), "0.0.0.0/0", 0, ""),
+			Token:   api.CreateToken(filepath.Join(".", "auth-service", "secret.key"), "0.0.0.0/0", 7, ""),
 		}},
 	}
 
