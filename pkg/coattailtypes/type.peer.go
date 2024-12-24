@@ -8,10 +8,14 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
 )
 
+type PeersFile struct {
+	Peers []PeerDetails `yaml:"peers"`
+}
+
 type PeerDetails struct {
 	// Whether or not the peer is local. This should be true if the peer is the
 	// local peer, and false if the peer is a remote peer.
-	IsLocal bool `yaml:"is_local" json:"is_local"`
+	IsLocal bool `yaml:"is_local,omitempty" json:"is_local"`
 
 	// The address of the peer. This is the address that the peer can be reached
 	// at. For the local peer, this should be the address of the local machine.

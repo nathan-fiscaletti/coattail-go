@@ -56,9 +56,7 @@ func loadPeers() ([]coattailtypes.PeerDetails, error) {
 		return nil, err
 	}
 
-	peers := struct {
-		Peers []coattailtypes.PeerDetails `yaml:"peers"`
-	}{}
+	peers := coattailtypes.PeersFile{}
 	err = yaml.NewDecoder(f).Decode(&peers)
 	if err != nil {
 		return nil, err

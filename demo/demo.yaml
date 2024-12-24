@@ -1,0 +1,14 @@
+version: "3"
+
+tasks:
+  run:
+    dir: demo
+    desc: Runs the demo
+    cmds:
+      - task: update-token
+      - docker compose up --build
+
+  update-token:
+    internal: true
+    dir: demo
+    cmd: go run ./cmd/util/fill.go

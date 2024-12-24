@@ -84,6 +84,11 @@ func (s *Service) Issue(ctx context.Context, claims Claims) (*Token, error) {
 	return NewToken(claims, s.secretKey)
 }
 
+// CreateToken creates a token with the provided claims and key.
+func CreateToken(ctx context.Context, key []byte, claims Claims) (*Token, error) {
+	return NewToken(claims, key)
+}
+
 // AuthenticationResult is the result of authenticating a token.
 type AuthenticationResult struct {
 	// Authenticated is true if the token was authenticated.

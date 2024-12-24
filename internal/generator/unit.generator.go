@@ -1,13 +1,14 @@
 package generator
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/generator/templates"
+	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
 	"gopkg.in/yaml.v3"
 )
 
@@ -19,8 +20,11 @@ type receiversYaml struct {
 	Receivers []templates.ReceiverTemplateData `yaml:"receivers"`
 }
 
-func GenerateUnits(root string) error {
-	logger := log.Default()
+func GenerateUnits(ctx context.Context, root string) error {
+	log, err := logging.GetLogger(ctx)
+	if err != nil {
+		return err
+	}
 
 	// ====== ACTIONS ======
 
@@ -36,7 +40,7 @@ func GenerateUnits(root string) error {
 		return fmt.Errorf("failed to unmarshal yaml file: %s: %s", actionsYamlFile, err)
 	}
 
-	logger.Printf("Found %d actions in %v\n", len(actions.Actions), actionsYamlFile)
+	log.Printf("Found %d actions in %v\n", len(actions.Actions), actionsYamlFile)
 
 	actionsDir := filepath.Join(root, "internal", "actions")
 	for _, action := range actions.Actions {
@@ -48,7 +52,7 @@ func GenerateUnits(root string) error {
 				return fmt.Errorf("failed to stat action file %s: %s", actionFileName, err)
 			}
 
-			logger.Printf("Generating action: %s\n", actionPath)
+			log.Printf("Generating action: %s\n", actionPath)
 
 			if err := templates.NewActionTemplate(action).Fill(actionsDir); err != nil {
 				return fmt.Errorf("failed to generate action: %w", err)
@@ -57,7 +61,7 @@ func GenerateUnits(root string) error {
 			continue
 		}
 
-		logger.Printf("Skipping action: %s (exists)\n", actionPath)
+		log.Printf("Skipping action: %s (exists)\n", actionPath)
 	}
 
 	// ====== RECEIVERS ======
@@ -74,7 +78,7 @@ func GenerateUnits(root string) error {
 		return fmt.Errorf("failed to unmarshal yaml file: %s: %s", receiversYamlFile, err)
 	}
 
-	logger.Printf("Found %d receivers in %v\n", len(receivers.Receivers), receiversYamlFile)
+	log.Printf("Found %d receivers in %v\n", len(receivers.Receivers), receiversYamlFile)
 
 	receiversDir := filepath.Join(root, "internal", "receivers")
 	for _, receiver := range receivers.Receivers {
@@ -86,7 +90,7 @@ func GenerateUnits(root string) error {
 				return fmt.Errorf("failed to stat receiver file %s: %s", receiverFileName, err)
 			}
 
-			logger.Printf("Generating receiver: %s\n", receiverPath)
+			log.Printf("Generating receiver: %s\n", receiverPath)
 
 			if err := templates.NewReceiverTemplate(receiver).Fill(receiversDir); err != nil {
 				return fmt.Errorf("failed to generate receiver: %w", err)
@@ -95,12 +99,12 @@ func GenerateUnits(root string) error {
 			continue
 		}
 
-		logger.Printf("Skipping receiver: %s (exists)\n", receiverPath)
+		log.Printf("Skipping receiver: %s (exists)\n", receiverPath)
 	}
 
 	// ====== REGISTRY ======
 
-	logger.Printf("Generating registry\n")
+	log.Printf("Generating registry\n")
 
 	registryTemplate := templates.RegistryTemplateData{
 		Actions:   actions.Actions,
@@ -111,11 +115,11 @@ func GenerateUnits(root string) error {
 		return fmt.Errorf("failed to generate registry: %w", err)
 	}
 
-	logger.Printf("Registry generated successfully.\n")
+	log.Printf("Registry generated successfully.\n")
 
 	// ====== SDK ======
 
-	logger.Printf("Generating SDK\n")
+	log.Printf("Generating SDK\n")
 
 	sdkTemplate := templates.SdkTemplateData{
 		Actions: actions.Actions,
@@ -125,7 +129,7 @@ func GenerateUnits(root string) error {
 		return fmt.Errorf("failed to generate sdk: %w", err)
 	}
 
-	logger.Printf("SDK generated successfully.\n")
+	log.Printf("SDK generated successfully.\n")
 
 	return nil
 }

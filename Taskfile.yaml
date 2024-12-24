@@ -1,5 +1,8 @@
 version: "3"
 
+includes:
+  demo: demo/demo.yaml
+
 tasks:
   run:
     desc: Run the local peer

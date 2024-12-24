@@ -3,6 +3,7 @@ package permission
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
 )
@@ -23,6 +24,7 @@ const (
 )
 
 type Permissions interface {
+	String() string
 	Has(permission Permission) bool
 	HasOneOf(permission ...Permission) bool
 	HasAnyOf(permission ...Permission) bool
@@ -59,6 +61,32 @@ func PermissionMask(permissions ...Permission) int32 {
 
 type permissions struct {
 	permitted int32
+}
+
+func (s *permissions) String() string {
+	readActions := "ReadActions"
+	readReceivers := "ReadReceivers"
+	readPeers := "ReadPeers"
+
+	var permissions []string
+
+	if s.HasAllOf(ReadActions, ReadReceivers, ReadPeers) {
+		permissions = append(permissions, "All")
+	} else {
+		if s.Has(ReadActions) {
+			permissions = append(permissions, readActions)
+		}
+
+		if s.Has(ReadReceivers) {
+			permissions = append(permissions, readReceivers)
+		}
+
+		if s.Has(ReadPeers) {
+			permissions = append(permissions, readPeers)
+		}
+	}
+
+	return strings.Join(permissions, ", ")
 }
 
 func (s *permissions) Has(permission Permission) bool {

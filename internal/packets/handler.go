@@ -60,6 +60,14 @@ func NewHandler(ctx context.Context, conn net.Conn, inputRole HandlerInputRole) 
 		}
 	}
 
+	if logger, err := logging.GetLogger(ctx); err == nil {
+		var role string = "server"
+		if inputRole == InputRoleClient {
+			role = "client"
+		}
+		logger.Printf("created connection handler: %s, role: %s\n", conn.RemoteAddr().String(), role)
+	}
+
 	return &Handler{
 		ctx:           ctxWithLogger,
 		inputRole:     inputRole,
