@@ -1,9 +1,11 @@
 version: '3.9'
 
+name: coattail-demo
+
 services:
   auth-service:
     build:
-      context: ./auth-service
+      context: ./
       dockerfile: Dockerfile
     environment:
       - GO111MODULE=on
@@ -14,6 +16,7 @@ services:
       - "5244:5243"
       - "8084:8082"
       - "8085:8083"
+    working_dir: /app/demo/auth-service
     command: ["./auth-service"]
     networks:
       coattail-demo:
@@ -27,7 +30,7 @@ services:
 
   web-service:
     build:
-      context: ./web-service
+      context: ./
       dockerfile: Dockerfile
     environment:
       - GO111MODULE=on
@@ -38,6 +41,7 @@ services:
       - "5245:5243"
       - "8086:8082"
       - "8087:8083"
+    working_dir: /app/demo/web-service
     command: ["./web-service"]
     depends_on:
       auth-service:

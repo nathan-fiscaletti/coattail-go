@@ -1,6 +1,6 @@
 module coattail_app
 
-require github.com/nathan-fiscaletti/coattail-go v0.0.3
+require github.com/nathan-fiscaletti/coattail-go v0.0.0
 
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
@@ -19,5 +19,7 @@ require (
 	gorm.io/driver/sqlite v1.5.6 // indirect
 	gorm.io/gorm v1.25.11 // indirect
 )
+
+replace github.com/nathan-fiscaletti/coattail-go => ../../
 
 go 1.23.2

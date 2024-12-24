@@ -2,7 +2,6 @@ version: "3"
 
 tasks:
   run:
-    dir: demo
     desc: Runs the demo
     cmds:
       - task: update-token

@@ -22,13 +22,20 @@ RUN go mod download
 # Copy the rest of the application files
 COPY . .
 
-# Build the Go binary for the "auth-service" from the /cmd directory
+# Build auth-service
+WORKDIR /app/demo/auth-service
+RUN go mod download
 RUN go build -o auth-service ./cmd
+
+# Build web-service
+WORKDIR /app/demo/web-service
+RUN go mod download
+RUN go build -o web-service ./cmd
+
+# Set the working directory back to /app
+WORKDIR /app
 
 # Expose required ports
 EXPOSE 5423
 EXPOSE 8082
 EXPOSE 8083
-
-# Command to run the application
-CMD ["./auth-service"]

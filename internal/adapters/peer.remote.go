@@ -42,7 +42,7 @@ func (i *RemotePeerAdapter) getHandler(ctx context.Context) (*packets.Handler, e
 
 		ctxWithAuthKey := context.WithValue(ctx, keys.AuthenticationKey, i.details.Token)
 		i.handler = packets.NewHandler(ctxWithAuthKey, conn, packets.InputRoleClient)
-		i.handler.HandlePackets(false)
+		i.handler.HandlePackets(true)
 	}
 
 	return i.handler, nil

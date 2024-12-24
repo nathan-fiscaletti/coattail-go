@@ -1,4 +1,4 @@
 service_address: 127.0.0.1:5243
 api_address: 127.0.0.1:8082
 web_address: 127.0.0.1:8083
-log_packets: false
+log_packets: true
