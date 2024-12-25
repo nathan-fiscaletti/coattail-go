@@ -1,8 +1,8 @@
 package main
 
 import (
-	"coattail_app/internal"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattail"
+	"github.com/nathan-fiscaletti/ct1/internal"
 )
 
 func main() {

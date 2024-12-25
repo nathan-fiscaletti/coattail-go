@@ -1,6 +1,9 @@
-module coattail_app
+module github.com/nathan-fiscaletti/ct2
 
-require github.com/nathan-fiscaletti/coattail-go v0.0.0
+require (
+	github.com/nathan-fiscaletti/coattail-go v0.0.0
+	github.com/nathan-fiscaletti/ct1 v0.0.0
+)
 
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
@@ -21,5 +24,6 @@ require (
 )
 
 replace github.com/nathan-fiscaletti/coattail-go => ../../
+replace github.com/nathan-fiscaletti/ct1 => ../auth-service/
 
 go 1.23.2

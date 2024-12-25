@@ -2,9 +2,9 @@
 package internal
 
 import (
-    "coattail_app/internal/actions"
+    "github.com/nathan-fiscaletti/ct1/internal/actions"
     
-	"coattail_app/pkg/types"
+	"github.com/nathan-fiscaletti/ct1/pkg/types"
 	"context"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"

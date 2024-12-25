@@ -1,7 +1,7 @@
 package actions
 
 import (
-	"coattail_app/pkg/types"
+	"github.com/nathan-fiscaletti/ct1/pkg/types"
 )
 
 type Authenticate struct{}

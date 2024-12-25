@@ -1,9 +1,11 @@
 package internal
 
 import (
-	"coattail_app/pkg/types"
 	"context"
 	"log"
+
+	"github.com/nathan-fiscaletti/ct1/pkg/sdk"
+	"github.com/nathan-fiscaletti/ct1/pkg/types"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
@@ -17,21 +19,16 @@ func (c *CT1) OnStart(ctx context.Context, local *coattailtypes.Peer) {
 		panic(err)
 	}
 
-	p, err := local.GetPeer(ctx, "192.168.100.2:5243")
+	authPeer, err := local.GetPeer(ctx, "192.168.100.2:5243")
 	if err != nil {
 		panic(err)
 	}
 
-	log.Default().Println("Running action Authenticate")
-	response, err := p.Run(ctx, "Authenticate", types.Request{Password: "password"})
+	authSdk := sdk.NewSdk(authPeer)
+	response, err := authSdk.Authenticate(ctx, types.Request{Password: "password"})
 	if err != nil {
 		panic(err)
 	}
-	log.Default().Println("Authenticate responded")
 
-	if res, ok := response.(types.Response); ok {
-		log.Default().Println("Authenticated: ", res.Authenticated)
-	} else {
-		panic("unexpected response type")
-	}
+	log.Default().Println("Authenticated: ", response.Authenticated)
 }

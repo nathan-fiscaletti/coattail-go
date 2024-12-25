@@ -1,4 +1,4 @@
-module coattail_app
+module github.com/nathan-fiscaletti/ct1
 
 require github.com/nathan-fiscaletti/coattail-go v0.0.0
 
