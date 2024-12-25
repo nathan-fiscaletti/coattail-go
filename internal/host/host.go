@@ -2,6 +2,7 @@ package host
 
 import (
 	"context"
+	"crypto/tls"
 	"embed"
 	"errors"
 	"fmt"
@@ -81,30 +82,80 @@ func (h *Host) Start(ctx context.Context, connHandler ConnectionHandler) error {
 	return err
 }
 
-func (h *Host) startListener(ctx context.Context, connHandler ConnectionHandler) error {
-	if logger, err := logging.GetLogger(ctx); err == nil {
-		logger.Printf("starting service at %v\n", h.Config.ServiceAddress)
+func (h *Host) startListener(ctx context.Context, handleConnection ConnectionHandler) error {
+	certFile := "server.crt"
+	keyFile := "server.key"
+
+	_, certFileErr := os.Stat(certFile)
+	_, keyFileErr := os.Stat(keyFile)
+
+	certFileExists := certFileErr == nil || !os.IsNotExist(certFileErr)
+	keyFileExists := keyFileErr == nil || !os.IsNotExist(keyFileErr)
+
+	if !certFileExists || !keyFileExists {
+		if logger, err := logging.GetLogger(ctx); err == nil {
+			logger.Printf("certificate or key missing, generating self-signed certificate\n")
+		}
+
+		// delete cert and key file if they exist
+
+		if certFileErr == nil {
+			err := os.Remove(certFile)
+			if err != nil {
+				return fmt.Errorf("failed to delete existing certificate file: %w", err)
+			}
+		}
+
+		if keyFileErr == nil {
+			err := os.Remove(keyFile)
+			if err != nil {
+				return fmt.Errorf("failed to delete existing key file: %w", err)
+			}
+		}
+
+		// generate new cert and key
+
+		err := h.createSelfSignedCertificate(ctx, h.Config.ServiceAddress.Host)
+		if err != nil {
+			return fmt.Errorf("failed to generate self-signed certificate: %w", err)
+		}
 	}
-	listener, err := net.Listen("tcp", h.Config.ServiceAddress)
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return fmt.Errorf("failed to load certificate and key: %w", err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+
+	listener, err := net.Listen("tcp", h.Config.ServiceAddress.String())
 	if err != nil {
 		return errors.Join(fmt.Errorf("failed to start listener"), err)
 	}
 
+	tlsListener := tls.NewListener(listener, tlsConfig)
 	go func() {
+		defer listener.Close()
+
 		for {
-			conn, err := listener.Accept()
+			conn, err := tlsListener.Accept()
 			if err != nil {
-				if logger, err := logging.GetLogger(ctx); err == nil {
-					logger.Print(errors.Join(fmt.Errorf("failed to accept connection"), err))
+				if logger, _ := logging.GetLogger(ctx); logger != nil {
+					logger.Println(fmt.Errorf("failed to accept connection: %v", err))
 				}
-				continue
+				break
+				// continue
 			}
 
-			go func() {
-				connHandler(ctx, conn, h.Config.LogPackets)
-			}()
+			go handleConnection(ctx, conn, h.Config.LogPackets)
 		}
 	}()
+
+	if logger, _ := logging.GetLogger(ctx); logger != nil {
+		logger.Printf("running service at %s\n", h.Config.ServiceAddress.String())
+	}
 
 	return nil
 }
@@ -121,11 +172,12 @@ func (h *Host) startWebServer(ctx context.Context) error {
 		webMux := http.NewServeMux()
 		fs := http.FileServer(http.FS(wfbFs))
 		webMux.Handle("/", fs)
+
 		if logger, err := logging.GetLogger(ctx); err == nil {
-			logger.Printf("starting web server at %v\n", h.Config.WebAddress)
+			logger.Printf("running web server at %v\n", h.Config.WebAddress)
 		}
 
-		err = http.ListenAndServe(h.Config.WebAddress, webMux)
+		err = http.ListenAndServe(h.Config.WebAddress.String(), webMux)
 		if err != nil {
 			if logger, err := logging.GetLogger(ctx); err == nil {
 				logger.Print(errors.Join(fmt.Errorf("listen and serve error"), err))
@@ -148,10 +200,6 @@ func loggingMiddleware(ctx context.Context, next http.Handler) http.Handler {
 func (h *Host) startApiServer(ctx context.Context) error {
 	go func() {
 		if logger, err := logging.GetLogger(ctx); err == nil {
-			logger.Printf("starting api server at %v\n", h.Config.ApiAddress)
-		}
-
-		if logger, err := logging.GetLogger(ctx); err == nil {
 			apiLogger := log.New(os.Stdout, logger.Prefix()+"[API] ", log.LstdFlags)
 			ctx = context.WithValue(ctx, keys.LoggerKey, apiLogger)
 		}
@@ -162,7 +210,11 @@ func (h *Host) startApiServer(ctx context.Context) error {
 		apiMux.Handle("/peers", loggingMiddleware(ctx, api.NewPeersHandler(ctx, h.LocalPeer)))
 		apiMux.Handle("/actions", loggingMiddleware(ctx, api.NewActionsHandler(ctx, h.LocalPeer)))
 
-		err := http.ListenAndServe(h.Config.ApiAddress, apiMux)
+		if logger, err := logging.GetLogger(ctx); err == nil {
+			logger.Printf("running api server at %v\n", h.Config.ApiAddress)
+		}
+
+		err := http.ListenAndServe(h.Config.ApiAddress.String(), apiMux)
 		if err != nil {
 			if logger, err := logging.GetLogger(ctx); err == nil {
 				logger.Print(errors.Join(fmt.Errorf("failed to start api server"), err))

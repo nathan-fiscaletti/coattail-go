@@ -10,9 +10,9 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
-type CT1 struct{}
+type WebService struct{}
 
-func (c *CT1) OnStart(ctx context.Context, local *coattailtypes.Peer) {
+func (c *WebService) OnStart(ctx context.Context, local *coattailtypes.Peer) {
 	// Register actions from the action registry.
 	err := RegisterUnits(ctx, local)
 	if err != nil {
@@ -31,4 +31,5 @@ func (c *CT1) OnStart(ctx context.Context, local *coattailtypes.Peer) {
 	}
 
 	log.Default().Println("Authenticated: ", response.Authenticated)
+	log.Default().Println("If you see this message, the demo has completed successfully! 🎉")
 }

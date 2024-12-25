@@ -1,17 +1,27 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
 
+type HostAddress struct {
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
+}
+
+func (h HostAddress) String() string {
+	return fmt.Sprintf("%s:%d", h.Host, h.Port)
+}
+
 type HostConfig struct {
-	ServiceAddress string `yaml:"service_address"`
-	LogPackets     bool   `yaml:"log_packets"`
-	WebAddress     string `yaml:"web_address"`
-	ApiAddress     string `yaml:"api_address"`
+	ServiceAddress HostAddress `yaml:"service_address"`
+	WebAddress     HostAddress `yaml:"web_address"`
+	ApiAddress     HostAddress `yaml:"api_address"`
+	LogPackets     bool        `yaml:"log_packets"`
 }
 
 func GetHostConfig() (*HostConfig, error) {

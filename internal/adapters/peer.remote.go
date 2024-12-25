@@ -2,12 +2,14 @@ package adapters
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
 	"net"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
+	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
 	"github.com/nathan-fiscaletti/coattail-go/internal/packets"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailmodels"
@@ -40,8 +42,27 @@ func (i *RemotePeerAdapter) getHandler(ctx context.Context) (*packets.Handler, e
 			return nil, err
 		}
 
+		tlsConfig := &tls.Config{
+			// InsecureSkipVerify skips certificate validation (not recommended in production)
+			// Set this to true only for testing or if you're using a self-signed certificate
+			InsecureSkipVerify: true,
+		}
+
+		tlsConn := tls.Client(conn, tlsConfig)
+
+		// Perform the TLS handshake
+		err = tlsConn.Handshake()
+		if err != nil {
+			return nil, fmt.Errorf("failed to perform TLS handshake: %w", err)
+		}
+
+		if logger, _ := logging.GetLogger(ctx); logger != nil {
+			state := tlsConn.ConnectionState()
+			logger.Printf("TLS Connection established with %s\n", state.ServerName)
+		}
+
 		ctxWithAuthKey := context.WithValue(ctx, keys.AuthenticationKey, i.details.Token)
-		i.handler = packets.NewHandler(ctxWithAuthKey, conn, packets.InputRoleClient)
+		i.handler = packets.NewHandler(ctxWithAuthKey, tlsConn, packets.InputRoleClient)
 		i.handler.HandlePackets(false)
 	}
 
