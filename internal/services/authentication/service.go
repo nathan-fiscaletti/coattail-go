@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/keys"
-	"github.com/nathan-fiscaletti/coattail-go/internal/logging"
-	"github.com/nathan-fiscaletti/coattail-go/internal/services/permission"
 )
 
 const (
@@ -39,21 +37,6 @@ func newService(ctx context.Context) (*Service, error) {
 	err := service.loadSecretKey()
 	if err != nil {
 		return nil, err
-	}
-
-	// Issue a single token
-	// TODO: Remove this, for debugging only.
-	_, ipnet, _ := net.ParseCIDR("192.168.100.0/24")
-	token, err := service.Issue(ctx, Claims{
-		AuthorizedNetwork: *ipnet,
-		Permitted:         permission.PermissionMask(permission.All),
-		Expiry:            time.Now().AddDate(100, 0, 0),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if logger, err := logging.GetLogger(ctx); err == nil {
-		logger.Printf("created dev token: %s", token)
 	}
 
 	return service, nil

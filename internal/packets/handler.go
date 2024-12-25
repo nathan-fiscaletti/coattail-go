@@ -157,10 +157,6 @@ func (c *Handler) Request(request Request) (coattailtypes.Packet, error) {
 	respChan := make(chan any)
 	idChan := make(chan uint64)
 
-	if logger, _ := logging.GetLogger(c.Context()); logger != nil {
-		logger.Printf("sending request: %s\n", reflect.TypeOf(request.Packet).Name())
-	}
-
 	c.output <- outputOperation{
 		callerId: 0,
 		packet:   request.Packet,
@@ -170,9 +166,6 @@ func (c *Handler) Request(request Request) (coattailtypes.Packet, error) {
 	}
 
 	id := <-idChan
-	if logger, _ := logging.GetLogger(c.Context()); logger != nil {
-		logger.Printf("got id (id: %d)\n", id)
-	}
 
 	if request.ResponseTimeout == 0 {
 		request.ResponseTimeout = 10 * time.Second
@@ -268,10 +261,6 @@ func (c *Handler) startAuthentication() {
 func (c *Handler) startOutput(logPackets bool) {
 	defer c.wg.Done()
 
-	if logger, _ := logging.GetLogger(c.Context()); logger != nil {
-		logger.Printf("starting output handler\n")
-	}
-
 	for {
 		operation, ok := <-c.output
 		if !ok {
@@ -317,10 +306,6 @@ func (c *Handler) startInput(logPackets bool) {
 
 	// Set the initial read deadline to 10 seconds
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-
-	if logger, _ := logging.GetLogger(c.Context()); logger != nil {
-		logger.Printf("starting input handler\n")
-	}
 
 	for {
 		// Read and decode the incoming ProtocolPacket

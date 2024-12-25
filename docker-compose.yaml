@@ -39,8 +39,8 @@ services:
       - "5245:5243"
       - "8086:8082"
       - "8087:8083"
-    working_dir: /app/demo/web-service
-    command: ["./web-service"]
+    working_dir: /app/demo
+    entrypoint: ["sh", "-c", "go run .scripts/generate-web-peers.go && cd web-service && exec ./web-service"]
     depends_on:
       auth-service:
         condition: service_healthy

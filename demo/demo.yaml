@@ -3,11 +3,4 @@ version: "3"
 tasks:
   run:
     desc: Runs the demo
-    cmds:
-      - task: update-token
-      - docker compose up --build
-
-  update-token:
-    internal: true
-    dir: demo
-    cmd: go run .scripts/generate-web-peers.go
+    cmd: docker compose up --build
