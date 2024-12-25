@@ -30,7 +30,7 @@ type Service struct {
 	secretKey []byte
 }
 
-func newService(ctx context.Context) (*Service, error) {
+func newService() (*Service, error) {
 	service := &Service{}
 
 	// Load or generate secret key
@@ -44,7 +44,7 @@ func newService(ctx context.Context) (*Service, error) {
 
 // ContextWithService returns a context with the authentication service.
 func ContextWithService(ctx context.Context) (context.Context, error) {
-	auth, err := newService(ctx)
+	auth, err := newService()
 	if err != nil {
 		return nil, err
 	}
