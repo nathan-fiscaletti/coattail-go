@@ -13,8 +13,9 @@ import (
 var registryTemplates embed.FS
 
 type RegistryTemplateData struct {
-	Actions   []ActionTemplateData   `yaml:"actions"`
-	Receivers []ReceiverTemplateData `yaml:"receivers"`
+	Actions     []ActionTemplateData   `yaml:"actions"`
+	Receivers   []ReceiverTemplateData `yaml:"receivers"`
+	PackageName string                 `yaml:"package_name"`
 
 	templates *embed.FS
 }

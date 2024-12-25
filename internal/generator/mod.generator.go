@@ -14,7 +14,7 @@ import (
 
 type ModGenerator struct{}
 
-func GenerateNewMod(destination string) error {
+func GenerateNewMod(destination string, packageName string) error {
 	info, ok := debug.ReadBuildInfo()
 
 	if !ok {
@@ -23,7 +23,7 @@ func GenerateNewMod(destination string) error {
 
 	version := info.Main.Version
 	modTemplate := templates.ModTemplateData{
-		PackageName:     "coattail_app",
+		PackageName:     packageName,
 		CoattailVersion: version,
 		GoVersion:       strings.TrimPrefix(runtime.Version(), "go"),
 	}

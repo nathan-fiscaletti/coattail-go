@@ -2,7 +2,7 @@
 package sdk
 
 import (
-    {{if gt (len .Actions) 0}}"coattail_app/pkg/types"{{end}}
+    {{if gt (len .Actions) 0}}"{{ .PackageName }}/pkg/types"{{end}}
 	"context"
 	"fmt"
 

@@ -13,7 +13,8 @@ import (
 var sdkTemplates embed.FS
 
 type SdkTemplateData struct {
-	Actions []ActionTemplateData `yaml:"actions"`
+	PackageName string               `yaml:"package_name"`
+	Actions     []ActionTemplateData `yaml:"actions"`
 
 	templates *embed.FS
 }

@@ -1,7 +1,7 @@
 package receivers
 {{ if or .InputType .OutputType }}
 import (
-    "coattail_app/pkg/types"
+    "{{ .PackageName }}/pkg/types"
 )
 {{ end }}
 type {{ .Name }} struct {}

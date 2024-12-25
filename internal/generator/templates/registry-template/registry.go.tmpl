@@ -2,9 +2,9 @@
 package internal
 
 import (
-    {{if gt (len .Actions) 0}}"coattail_app/internal/actions"{{end}}
-    {{if gt (len .Receivers) 0}}"coattail_app/internal/receivers"{{end}}
-	"coattail_app/pkg/types"
+    {{if gt (len .Actions) 0}}"{{ .PackageName }}/internal/actions"{{end}}
+    {{if gt (len .Receivers) 0}}"{{ .PackageName }}/internal/receivers"{{end}}
+	"{{ .PackageName }}/pkg/types"
 	"context"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"

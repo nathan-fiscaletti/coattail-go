@@ -15,8 +15,9 @@ import (
 var receiverTemplates embed.FS
 
 type ReceiverTemplateData struct {
-	Name      string `yaml:"name"`
-	InputType string `yaml:"input"`
+	PackageName string `yaml:"package_name"`
+	Name        string `yaml:"name"`
+	InputType   string `yaml:"input"`
 
 	templates *embed.FS
 }

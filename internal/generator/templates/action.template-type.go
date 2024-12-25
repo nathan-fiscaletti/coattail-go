@@ -15,9 +15,10 @@ import (
 var actionTemplates embed.FS
 
 type ActionTemplateData struct {
-	Name       string `yaml:"name"`
-	InputType  string `yaml:"input"`
-	OutputType string `yaml:"output"`
+	Name        string `yaml:"name"`
+	InputType   string `yaml:"input"`
+	OutputType  string `yaml:"output"`
+	PackageName string `yaml:"package_name"`
 
 	templates *embed.FS
 }

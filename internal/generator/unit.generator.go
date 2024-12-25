@@ -20,7 +20,7 @@ type receiversYaml struct {
 	Receivers []templates.ReceiverTemplateData `yaml:"receivers"`
 }
 
-func GenerateUnits(ctx context.Context, root string) error {
+func GenerateUnits(ctx context.Context, root string, packageName string) error {
 	log, err := logging.GetLogger(ctx)
 	if err != nil {
 		return err
@@ -54,6 +54,7 @@ func GenerateUnits(ctx context.Context, root string) error {
 
 			log.Printf("Generating action: %s\n", actionPath)
 
+			action.PackageName = packageName
 			if err := templates.NewActionTemplate(action).Fill(actionsDir); err != nil {
 				return fmt.Errorf("failed to generate action: %w", err)
 			}
@@ -92,6 +93,7 @@ func GenerateUnits(ctx context.Context, root string) error {
 
 			log.Printf("Generating receiver: %s\n", receiverPath)
 
+			receiver.PackageName = packageName
 			if err := templates.NewReceiverTemplate(receiver).Fill(receiversDir); err != nil {
 				return fmt.Errorf("failed to generate receiver: %w", err)
 			}
@@ -107,8 +109,9 @@ func GenerateUnits(ctx context.Context, root string) error {
 	log.Printf("Generating registry\n")
 
 	registryTemplate := templates.RegistryTemplateData{
-		Actions:   actions.Actions,
-		Receivers: receivers.Receivers,
+		Actions:     actions.Actions,
+		Receivers:   receivers.Receivers,
+		PackageName: packageName,
 	}
 
 	if err := templates.NewRegistryTemplate(registryTemplate).Fill(filepath.Join(root, "internal")); err != nil {
@@ -122,7 +125,8 @@ func GenerateUnits(ctx context.Context, root string) error {
 	log.Printf("Generating SDK\n")
 
 	sdkTemplate := templates.SdkTemplateData{
-		Actions: actions.Actions,
+		PackageName: packageName,
+		Actions:     actions.Actions,
 	}
 
 	if err := templates.NewSdkTemplate(sdkTemplate).Fill(filepath.Join(root, "pkg", "sdk")); err != nil {

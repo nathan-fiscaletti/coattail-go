@@ -10,7 +10,7 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/internal/util"
 )
 
-func CreateCoattailInstance(destination string) {
+func CreateCoattailInstance(destination string, packageName string) {
 	ctx, err := util.CreateServiceContext(context.Background())
 	if err != nil {
 		panic(err)
@@ -28,7 +28,7 @@ func CreateCoattailInstance(destination string) {
 
 	log.Printf("Creating new Coattail instance at: %v\n", destination)
 
-	err = generator.GenerateNewMod(destination)
+	err = generator.GenerateNewMod(destination, packageName)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
 		os.Exit(1)
