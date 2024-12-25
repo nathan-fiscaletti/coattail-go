@@ -109,7 +109,7 @@ func (s *Service) Authenticate(ctx context.Context, tokenStr string, source net.
 	}
 
 	now := time.Now()
-	if now.Before(token.Expiry) || now.After(token.Expiry) {
+	if now.After(token.Expiry) {
 		return nil, ErrTokenExpired
 	}
 

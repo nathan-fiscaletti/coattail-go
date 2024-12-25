@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"coattail_app/pkg/types"
 	"context"
 	"log"
 
@@ -21,20 +22,14 @@ func (c *CT1) OnStart(ctx context.Context, local *coattailtypes.Peer) {
 		panic(err)
 	}
 
-	type Response struct {
-		Authenticated bool `json:"authenticated"`
-	}
-
 	log.Default().Println("Running action Authenticate")
-	response, err := p.Run(ctx, "Authenticate", struct {
-		Password string `json:"password"`
-	}{Password: "password"})
+	response, err := p.Run(ctx, "Authenticate", types.Request{Password: "password"})
 	if err != nil {
 		panic(err)
 	}
 	log.Default().Println("Authenticate responded")
 
-	if res, ok := response.(Response); ok {
+	if res, ok := response.(types.Response); ok {
 		log.Default().Println("Authenticated: ", res.Authenticated)
 	} else {
 		panic("unexpected response type")

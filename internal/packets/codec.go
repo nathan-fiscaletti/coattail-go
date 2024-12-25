@@ -46,7 +46,7 @@ func (e StreamCodec) Write(callerId uint64, p coattailtypes.Packet) (uint64, err
 		Data:         p,
 	})
 	if err != nil {
-		return 0, err
+		return packetId, err
 	}
 
 	return packetId, nil

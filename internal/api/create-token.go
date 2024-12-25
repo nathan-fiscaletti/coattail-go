@@ -45,7 +45,7 @@ func CreateToken(keyfile, network string, perm int, expiryStr string) string {
 	log.Printf("  Keyfile:    %s\n", keyfile)
 	log.Printf("  Network:    %s\n", network)
 	log.Printf("  Permission: %s (%d)\n", permission.GetPermissions(int32(perm)).String(), perm)
-	log.Printf("  Expiry:     %s\n", expiry.String())
+	log.Printf("  Expiry:     %s\n", expiry.Format(time.RFC3339))
 	log.Println()
 
 	// make sure the keyfile exists

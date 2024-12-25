@@ -275,6 +275,9 @@ func (c *Handler) startOutput(logPackets bool) {
 	for {
 		operation, ok := <-c.output
 		if !ok {
+			if logger, _ := logging.GetLogger(c.Context()); logger != nil {
+				logger.Printf("output channel closed or empty, closing output handler\n")
+			}
 			break
 		}
 
@@ -286,6 +289,7 @@ func (c *Handler) startOutput(logPackets bool) {
 		}
 
 		id, err := c.codec.Write(operation.callerId, operation.packet)
+		operation.idChan <- id
 		if err != nil {
 			operation.errChan <- err
 			continue
@@ -303,10 +307,6 @@ func (c *Handler) startOutput(logPackets bool) {
 
 		if operation.errChan != nil {
 			errorHandlers.Store(id, operation.errChan)
-		}
-
-		if operation.idChan != nil {
-			operation.idChan <- id
 		}
 	}
 }

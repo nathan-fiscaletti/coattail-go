@@ -42,10 +42,11 @@ func (h AuthenticationPacket) Handle(ctx context.Context) (coattailtypes.Packet,
 	var response AuthenticationResponsePacket
 
 	result, err := auth.Authenticate(ctx, h.Token, net.ParseIP(host))
-	response.Authenticated = result.Authenticated
-	response.Permitted = result.Token.Permitted
 	if err != nil {
 		response.Error = err.Error()
+	} else {
+		response.Authenticated = result.Authenticated
+		response.Permitted = result.Token.Permitted
 	}
 
 	return response, nil
