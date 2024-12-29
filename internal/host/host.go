@@ -19,6 +19,11 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
+var (
+	ErrHostNotFound = errors.New("host not found in context")
+	ErrInvalidHost  = errors.New("invalid host found in context")
+)
+
 //go:embed web/**
 var web embed.FS
 
@@ -45,14 +50,14 @@ func ContextWithHost(ctx context.Context) (context.Context, error) {
 func GetHost(ctx context.Context) (*Host, error) {
 	host := ctx.Value(keys.HostKey)
 	if host == nil {
-		return nil, fmt.Errorf("no host found in context")
+		return nil, ErrHostNotFound
 	}
 
 	if h, ok := host.(*Host); ok {
 		return h, nil
 	}
 
-	return nil, fmt.Errorf("invalid host found in context")
+	return nil, ErrInvalidHost
 }
 
 func newHost() (*Host, error) {
@@ -115,7 +120,7 @@ func (h *Host) startListener(ctx context.Context, handleConnection ConnectionHan
 
 		// generate new cert and key
 
-		err := h.createSelfSignedCertificate(ctx, h.Config.ServiceAddress.Host)
+		err := h.createSelfSignedCertificate(ctx, h.Config.ServiceConfig.Address.Host)
 		if err != nil {
 			return fmt.Errorf("failed to generate self-signed certificate: %w", err)
 		}
@@ -130,9 +135,9 @@ func (h *Host) startListener(ctx context.Context, handleConnection ConnectionHan
 		Certificates: []tls.Certificate{cert},
 	}
 
-	listener, err := net.Listen("tcp", h.Config.ServiceAddress.String())
+	listener, err := net.Listen("tcp", h.Config.ServiceConfig.Address.String())
 	if err != nil {
-		return errors.Join(fmt.Errorf("failed to start listener"), err)
+		return fmt.Errorf("failed to start listener: %w", err)
 	}
 
 	tlsListener := tls.NewListener(listener, tlsConfig)
@@ -149,18 +154,22 @@ func (h *Host) startListener(ctx context.Context, handleConnection ConnectionHan
 				// continue
 			}
 
-			go handleConnection(ctx, conn, h.Config.LogPackets)
+			go handleConnection(ctx, conn, h.Config.ServiceConfig.LogPackets)
 		}
 	}()
 
 	if logger, _ := logging.GetLogger(ctx); logger != nil {
-		logger.Printf("running service at %s\n", h.Config.ServiceAddress.String())
+		logger.Printf("running service at %s\n", h.Config.ServiceConfig.Address.String())
 	}
 
 	return nil
 }
 
 func (h *Host) startWebServer(ctx context.Context) error {
+	if !h.Config.WebConfig.Enabled {
+		return nil
+	}
+
 	wfbFs, err := fs.Sub(web, "web")
 	if err != nil {
 		// We should panic here because this means the embedded
@@ -174,13 +183,13 @@ func (h *Host) startWebServer(ctx context.Context) error {
 		webMux.Handle("/", fs)
 
 		if logger, err := logging.GetLogger(ctx); err == nil {
-			logger.Printf("running web server at %v\n", h.Config.WebAddress)
+			logger.Printf("running web server at %v\n", h.Config.WebConfig.Address.String())
 		}
 
-		err = http.ListenAndServe(h.Config.WebAddress.String(), webMux)
+		err = http.ListenAndServe(h.Config.WebConfig.Address.String(), webMux)
 		if err != nil {
 			if logger, err := logging.GetLogger(ctx); err == nil {
-				logger.Print(errors.Join(fmt.Errorf("listen and serve error"), err))
+				logger.Print(fmt.Errorf("listen and serve error: %w", err))
 			}
 		}
 	}()
@@ -198,6 +207,10 @@ func loggingMiddleware(ctx context.Context, next http.Handler) http.Handler {
 }
 
 func (h *Host) startApiServer(ctx context.Context) error {
+	if !h.Config.ApiConfig.Enabled {
+		return nil
+	}
+
 	go func() {
 		if logger, err := logging.GetLogger(ctx); err == nil {
 			apiLogger := log.New(os.Stdout, logger.Prefix()+"[API] ", log.LstdFlags)
@@ -211,13 +224,13 @@ func (h *Host) startApiServer(ctx context.Context) error {
 		apiMux.Handle("/actions", loggingMiddleware(ctx, api.NewActionsHandler(ctx, h.LocalPeer)))
 
 		if logger, err := logging.GetLogger(ctx); err == nil {
-			logger.Printf("running api server at %v\n", h.Config.ApiAddress)
+			logger.Printf("running api server at %v\n", h.Config.ApiConfig.Address.String())
 		}
 
-		err := http.ListenAndServe(h.Config.ApiAddress.String(), apiMux)
+		err := http.ListenAndServe(h.Config.ApiConfig.Address.String(), apiMux)
 		if err != nil {
 			if logger, err := logging.GetLogger(ctx); err == nil {
-				logger.Print(errors.Join(fmt.Errorf("failed to start api server"), err))
+				logger.Print(fmt.Errorf("failed to start api server: %w", err))
 			}
 		}
 	}()

@@ -28,7 +28,7 @@ func InitLocalPeer(host *host.Host) error {
 	host.LocalPeer = coattailtypes.NewPeer(
 		coattailtypes.PeerDetails{
 			IsLocal: true,
-			Address: host.Config.ServiceAddress.String(),
+			Address: host.Config.ServiceConfig.Address.String(),
 		},
 		&LocalPeerAdapter{
 			Units: []coattailtypes.UnitImpl{},

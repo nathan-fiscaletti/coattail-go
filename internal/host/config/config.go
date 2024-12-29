@@ -8,20 +8,34 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type HostAddress struct {
+type Address struct {
 	Host string `yaml:"host"`
 	Port int    `yaml:"port"`
 }
 
-func (h HostAddress) String() string {
+func (h Address) String() string {
 	return fmt.Sprintf("%s:%d", h.Host, h.Port)
 }
 
+type ServiceConfig struct {
+	LogPackets bool    `yaml:"log_packets"`
+	Address    Address `yaml:"address"`
+}
+
+type ApiConfig struct {
+	Enabled bool    `yaml:"enabled"`
+	Address Address `yaml:"address"`
+}
+
+type WebConfig struct {
+	Enabled bool    `yaml:"enabled"`
+	Address Address `yaml:"address"`
+}
+
 type HostConfig struct {
-	ServiceAddress HostAddress `yaml:"service_address"`
-	WebAddress     HostAddress `yaml:"web_address"`
-	ApiAddress     HostAddress `yaml:"api_address"`
-	LogPackets     bool        `yaml:"log_packets"`
+	ServiceConfig ServiceConfig `yaml:"service"`
+	ApiConfig     ApiConfig     `yaml:"api"`
+	WebConfig     WebConfig     `yaml:"web"`
 }
 
 func GetHostConfig() (*HostConfig, error) {

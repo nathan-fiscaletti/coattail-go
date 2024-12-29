@@ -1,10 +1,17 @@
-service_address:
-  host: 127.0.0.1
-  port: 5243
-api_address:
-  host: 127.0.0.1
-  port: 8082
-web_address:
-  host: 127.0.0.1
-  port: 8083
-log_packets: false
+service:
+  log_packets: false
+  address:
+    host: 127.0.0.1
+    port: 5243
+
+api:
+  enabled: false
+  address:
+    host: 127.0.0.1
+    port: 8082
+
+web:
+  enabled: false
+  address:
+    host: 127.0.0.1
+    port: 8083
