@@ -1,3 +1,5 @@
+![Logo](logo.png)
+
 # Coattail
 
 **A Distributed Event-Driven Orchestration Framework for Scalable Automation**
