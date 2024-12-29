@@ -1,8 +1,10 @@
 # Coattail
 
-> A Distributed Event-Driven Orchestration Framework for Scalable Automation
+**A Distributed Event-Driven Orchestration Framework for Scalable Automation**
 
 Coattail is a powerful framework designed to orchestrate workflows, automate tasks, and manage distributed systems. It leverages an event-driven architecture to execute actions and notify instances, enabling seamless scalability and flexibility.
+
+> ⚠️ This project is currently in the early stages of development. Please do not use it in production.
 
 [Click here to learn more about Coattail](docs/getting-started.md)
 
