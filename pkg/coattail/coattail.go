@@ -3,6 +3,7 @@ package coattail
 
 import (
 	"context"
+	"errors"
 	"net"
 	"reflect"
 
@@ -13,6 +14,10 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/internal/packets"
 	"github.com/nathan-fiscaletti/coattail-go/internal/services/authentication"
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
+)
+
+var (
+	ErrLocalPeerNotFound = errors.New("local peer not found")
 )
 
 // Run starts the local peer and runs the main function. This function will block forever.
@@ -47,6 +52,19 @@ func Run(app coattailtypes.App) error {
 	// Block forever
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func LocalPeer(ctx context.Context) (*coattailtypes.Peer, error) {
+	h, err := host.GetHost(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if h.LocalPeer == nil {
+		return nil, ErrLocalPeerNotFound
+	}
+
+	return h.LocalPeer, nil
 }
 
 func createContext(app coattailtypes.App) (context.Context, error) {

@@ -1,10 +1,12 @@
 package coattailtypes
 
+import "context"
+
 type Action[
 	A any,
 	R any,
 ] interface {
-	Execute(args *A) (R, error)
+	Execute(context.Context, *A) (R, error)
 }
 
 type actionUnit[
@@ -14,14 +16,14 @@ type actionUnit[
 	action Action[A, R]
 }
 
-func (a *actionUnit[A, R]) Execute(args any) (any, error) {
+func (a *actionUnit[A, R]) Execute(ctx context.Context, args any) (any, error) {
 	var argument *A
 
 	if argsAny, ok := args.(A); ok {
 		argument = &argsAny
 	}
 
-	return a.action.Execute(argument)
+	return a.action.Execute(ctx, argument)
 }
 
 func NewAction[

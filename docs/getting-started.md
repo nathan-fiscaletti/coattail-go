@@ -143,7 +143,7 @@ type Action[
 	A any,
 	R any,
 ] interface {
-	Execute(args *A) (R, error)
+	Execute(context.Context, *A) (R, error)
 }
 ```
 
@@ -173,7 +173,7 @@ To create an action:
    ```go
    type MyAction struct{}
    
-   func (a *MyAction) Execute(arg *types.Request) (types.Response, error) {
+   func (a *MyAction) Execute(ctx context.Context, arg *types.Request) (types.Response, error) {
    	return types.Response{
    		Message: fmt.Sprintf("Hello, %s!", arg.Name),
    	}, nil
@@ -211,7 +211,7 @@ Receivers differ from Actions in that they are exclusively used for receiving pu
 
 ```go
 type Receiver[A any] interface {
-	Execute(*A) error
+	Execute(context.Context, *A) error
 }
 ```
 
@@ -238,7 +238,7 @@ To create a receiver:
    ```go
    type MyReceiver struct{}
    
-   func (a *MyReceiver) Execute(arg *types.Response) error {
+   func (a *MyReceiver) Execute(ctx context.Context, arg *types.Response) error {
    	fmt.Println(arg.Message)
    }
    ```

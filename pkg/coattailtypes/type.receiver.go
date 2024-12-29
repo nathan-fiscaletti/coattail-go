@@ -1,9 +1,13 @@
 package coattailtypes
 
-import "github.com/invopop/jsonschema"
+import (
+	"context"
+
+	"github.com/invopop/jsonschema"
+)
 
 type Receiver[A any] interface {
-	Execute(*A) error
+	Execute(context.Context, *A) error
 }
 
 type ReceiverWithInputSchema interface {
@@ -14,14 +18,14 @@ type receiverUnit[A any] struct {
 	receiver Receiver[A]
 }
 
-func (a *receiverUnit[A]) Execute(args any) (any, error) {
+func (a *receiverUnit[A]) Execute(ctx context.Context, args any) (any, error) {
 	var argument *A
 
 	if argsAny, ok := args.(A); ok {
 		argument = &argsAny
 	}
 
-	err := a.receiver.Execute(argument)
+	err := a.receiver.Execute(ctx, argument)
 	return nil, err
 }
 

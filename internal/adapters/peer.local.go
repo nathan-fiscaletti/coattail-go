@@ -91,13 +91,13 @@ type runUnitArguments struct {
 	Args any
 }
 
-func (i *LocalPeerAdapter) runUnit(arg runUnitArguments) (any, error) {
+func (i *LocalPeerAdapter) runUnit(ctx context.Context, arg runUnitArguments) (any, error) {
 	h, err := i.getUnit(arg.Type, arg.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	return h.Execute(arg.Args)
+	return h.Execute(ctx, arg.Args)
 }
 
 /* ====== Actions ====== */
@@ -107,7 +107,7 @@ func (i *LocalPeerAdapter) Run(ctx context.Context, name string, arg any) (any, 
 		logger.Printf("running action: %s", name)
 	}
 
-	return i.runUnit(runUnitArguments{
+	return i.runUnit(ctx, runUnitArguments{
 		Type: coattailtypes.UnitTypeAction,
 		Name: name,
 		Args: arg,
@@ -246,7 +246,7 @@ func (i *LocalPeerAdapter) Notify(ctx context.Context, name string, arg any) err
 		logger.Printf("notifying receiver: %s", name)
 	}
 
-	_, err := i.runUnit(runUnitArguments{
+	_, err := i.runUnit(ctx, runUnitArguments{
 		Type: coattailtypes.UnitTypeReceiver,
 		Name: name,
 		Args: arg,
