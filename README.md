@@ -1,57 +1,31 @@
 # Coattail
 
-## What is Coattail?
+> A Distributed Event-Driven Orchestration Framework for Scalable Automation
 
-Coattail is a peer-to-peer communication mechanism designed for go microservices within distributed systems. It allows services to directly communicate with each other as peers.
+Coattail is a powerful framework designed to orchestrate workflows, automate tasks, and manage distributed systems. It leverages an event-driven architecture to execute actions and notify instances, enabling seamless scalability and flexibility.
 
-## Install
+[Click here to learn more about Coattail](docs/getting-started.md)
 
-```bash
-$ go install github.com/nathan-fiscaletti/coattail-go/cmd/coattail@latest
-```
-
-## Creating a new Coattail instance
-
-```bash
-$ mkdir ct-instance
-$ coattail new ./ct-instance
-```
-
-## Running a Coattail instance
-
-1. Using [Task](https://taskfile.dev/) (See `./Taskfile.yaml` in your Coattail instance)
-
-   ```bash
-   $ cd ct-instance
-   $ task run
-   ```
-
-2. Running directly
-
-   ```bash
-   $ cd ct-instance
-   $ go run ./cmd
-   ```
-
-## Architecture
 ![Architecture](./arch.png)
 
-### Actions & Receivers
+## Features
 
-Actions and receivers are small blocks of code that you integrate in your Coattail instance. They are the building blocks of the Coattail system.
+**Distributed Architecture**
+- Interconnect multiple Coattail instances for task distribution and scalability.
+- Efficient communication between instances for coordinated workflows.
 
-```mermaid
-sequenceDiagram
-    participant Caller
-    participant Action
-    participant Receiver
+**Event-Driven**
+- Trigger workflows and actions based on events.
+- Decoupled components for modularity and flexibility.
 
-    Caller->>Action: Perform
-    Note over Action: Execute
-    alt Publish?
-        Action->>Receiver: Notify(result)
-        Note over Receiver: Execute
-    end
+**Orchestration**
+- Coordinate complex workflows using action chaining and dependency management.
+- Notify subscribers of completed actions and results.
 
-    Action->>Caller: Result
-```
+**Scalability**
+- Stateless components enable horizontal scaling.
+- Low-latency communication ensures performance under high workloads.
+
+**Automation**
+- Define declarative workflows to automate repetitive or complex processes.
+- Integrate seamlessly with external APIs and systems.
