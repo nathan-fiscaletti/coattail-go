@@ -19,6 +19,9 @@ Coattail is a powerful framework designed to orchestrate workflows, automate tas
   - [Receivers](#receivers)
     - [Creating a Receiver](#creating-a-receiver)
     - [Subscribing to an Action with a Receiver](#subscribing-to-an-action-with-a-receiver)
+    - [Unsubscribing from an Action](#unsubscribing-from-an-action)
+    - [Notifying a Receiver Manually](#notifying-a-receiver-manually)
+  - [Accessing the Local Peer](#accessing-the-local-peer)
 - [Next Steps](#next-steps)
   - [Coattail Rest API](#coattail-rest-api)
   - [Coattail Web UI](#coattail-web-ui)
@@ -98,7 +101,7 @@ package types
 import "encoding/gob"
 
 func init() {
-	gob.Register(Request{})
+    gob.Register(Request{})
 }
 
 type Request struct {
@@ -114,7 +117,7 @@ package types
 import "encoding/gob"
 
 func init() {
-	gob.Register(Response{})
+    gob.Register(Response{})
 }
 
 type Response struct {
@@ -140,10 +143,10 @@ These callers include
 
 ```go
 type Action[
-	A any,
-	R any,
+    A any,
+    R any,
 ] interface {
-	Execute(context.Context, *A) (R, error)
+    Execute(context.Context, *A) (R, error)
 }
 ```
 
@@ -174,9 +177,9 @@ To create an action:
    type MyAction struct{}
    
    func (a *MyAction) Execute(ctx context.Context, arg *types.Request) (types.Response, error) {
-   	return types.Response{
-   		Message: fmt.Sprintf("Hello, %s!", arg.Name),
-   	}, nil
+       return types.Response{
+           Message: fmt.Sprintf("Hello, %s!", arg.Name),
+       }, nil
    }
    ```
 
@@ -195,7 +198,54 @@ To create an action:
 
 #### Executing an Action
 
-- [TODO: Executing an Action](#)
+> In order to execute an action, you must first be authenticated with the hosting Coattail instance. See [Authentication](#authentication) for more information.
+
+See [Accessing the Local Peer](#accessing-the-local-peer) for more information on how to access the local peer.
+
+Actions can be executed in several ways:
+
+1. **Through the SDK provided by the hosting Coattail instance**
+
+   Each Coattail instance has an automatically generated SDK that can be used by peering Coattail instances to execute actions. This SDK is generated using the `coattail generate` command and is located in the `pkg/sdk` package.
+
+   > For this to work, the Coattail instance that is exposing the SDK must be consumable as a package by the peering Coattail instance.
+
+   ```go
+   import (
+       "github.com/my-company/my-service/pkg/sdk"
+       "github.com/my-company/my-service/pkg/types"
+   )
+
+   . . .
+
+   peer, _ := local.GetPeer(ctx, "127.0.0.1:5243")
+   sdk := sdk.NewSdk(peer)
+   response, _ := sdk.MyAction(ctx, types.Request{Name: "John"})
+   ```
+
+2. **Directly over a secure TCP connection without the aid of the SDK**
+
+   This method is not recommended as it requires that you know the name of the action and the types of the input and output arguments.
+
+   > For this to work, the Coattail instance that is exposing the types must be consumable as a package by the peering Coattail instance. Otherwise, you can manually re-create the types in your local `pkg/types` package.
+
+   ```go
+   import (
+       "github.com/my-company/my-service/pkg/types"
+   )
+
+   . . .
+
+   peer, _ := local.GetPeer(ctx, "127.0.0.1:5243")
+   responseAny, _ := peer.Run(ctx, "MyAction", types.Request{
+       Name: "John",
+   })
+   response, _ := responseAny.(types.Response)
+   ```
+
+3. **Through the Web UI, REST API or CLI (if applicable)**
+
+   - [TODO: API, CLI, Web UI](#)
 
 ### Receivers
 
@@ -211,7 +261,7 @@ Receivers differ from Actions in that they are exclusively used for receiving pu
 
 ```go
 type Receiver[A any] interface {
-	Execute(context.Context, *A) error
+    Execute(context.Context, *A) error
 }
 ```
 
@@ -239,7 +289,7 @@ To create a receiver:
    type MyReceiver struct{}
    
    func (a *MyReceiver) Execute(ctx context.Context, arg *types.Response) error {
-   	fmt.Println(arg.Message)
+       fmt.Println(arg.Message)
    }
    ```
 
@@ -259,6 +309,28 @@ To create a receiver:
 #### Subscribing to an Action with a Receiver
 
 - [TODO: Subscribing to an Action](#)
+
+#### Unsubscribing from an Action
+
+- [TODO: Unsubscribing from an Action](#)
+
+#### Notifying a Receiver Manually
+
+- [TODO: Notifying a Receiver Manually](#)
+
+### Accessing the Local Peer
+
+The local peer allows you to access your local Coattail instance directly from your code. This is useful for executing actions and receivers locally.
+
+```go
+import (
+    "github.com/nathan-fiscaletti/coattail-go/pkg/coattail"
+)
+
+. . .
+
+local, _ := coattail.LocalPeer(ctx)
+```
 
 ## Next Steps
 
