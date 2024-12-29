@@ -1,8 +1,10 @@
 # Coattail: Getting Started
 
-> A Distributed Event-Driven Orchestration Framework for Scalable Automation
+**A Distributed Event-Driven Orchestration Framework for Scalable Automation**
 
 Coattail is a powerful framework designed to orchestrate workflows, automate tasks, and manage distributed systems. It leverages an event-driven architecture to execute actions and notify instances, enabling seamless scalability and flexibility.
+
+> ⚠️ This project is currently in the early stages of development. Please do not use it in production.
 
 ## Index
 
@@ -17,6 +19,10 @@ Coattail is a powerful framework designed to orchestrate workflows, automate tas
   - [Receivers](#receivers)
     - [Creating a Receiver](#creating-a-receiver)
     - [Subscribing to an Action with a Receiver](#subscribing-to-an-action-with-a-receiver)
+- [Next Steps](#next-steps)
+  - [Coattail Rest API](#coattail-rest-api)
+  - [Coattail Web UI](#coattail-web-ui)
+  - [Coattail CLI](#coattail-cli)
 
 ## Installing Coattail
 
@@ -179,7 +185,7 @@ To create an action:
    ```go
    . . .
    
-   err = local.RegisterAction(ctx, "MyAction", coattailtypes.NewAction[types.Request , types.   Response](&actions.MyAction{}))
+   err = local.RegisterAction(ctx, "MyAction", coattailtypes.NewAction[types.Request , types.Response](&actions.MyAction{}))
    if err != nil {
        return err
    }
@@ -253,3 +259,17 @@ To create a receiver:
 #### Subscribing to an Action with a Receiver
 
 - [TODO: Subscribing to an Action](#)
+
+## Next Steps
+
+### Coattail Rest API
+
+- [TODO: Coattail Rest API](#)
+
+### Coattail Web UI
+
+- [TODO: Coattail Web UI](#)
+
+### Coattail CLI
+
+- [TODO: Coattail CLI](#)
