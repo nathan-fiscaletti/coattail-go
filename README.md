@@ -10,28 +10,6 @@ Coattail is a powerful framework designed to orchestrate workflows, automate tas
 
 > ⚠️ This project is currently in the early stages of development. Please do not use it in production.
 
-## Features
-
-**Distributed Architecture**
-- Interconnect multiple Coattail instances for task distribution and scalability.
-- Efficient communication between instances for coordinated workflows.
-
-**Event-Driven**
-- Trigger workflows and actions based on events.
-- Decoupled components for modularity and flexibility.
-
-**Orchestration**
-- Coordinate complex workflows using action chaining and dependency management.
-- Notify subscribers of completed actions and results.
-
-**Scalability**
-- Stateless components enable horizontal scaling.
-- Low-latency communication ensures performance under high workloads.
-
-**Automation**
-- Define declarative workflows to automate repetitive or complex processes.
-- Integrate seamlessly with external APIs and systems.
-
 ## Index
 
 - [Installing Coattail](#installing-coattail)
