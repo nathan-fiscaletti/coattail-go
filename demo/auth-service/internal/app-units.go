@@ -3,8 +3,7 @@ package internal
 
 import (
     "github.com/nathan-fiscaletti/ct1/internal/actions"
-    "github.com/nathan-fiscaletti/ct1/internal/receivers"
-	"context"
+    "context"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
@@ -20,11 +19,6 @@ func (a *App) LoadUnits(ctx context.Context, local *coattailtypes.Peer) error {
     }
     
     // Register receivers
-    
-    err = local.RegisterReceiver(ctx, coattailtypes.NewReceiver(&receivers.MyReceiver{}))
-    if err != nil {
-        return err
-    }
     
     return nil
 }
