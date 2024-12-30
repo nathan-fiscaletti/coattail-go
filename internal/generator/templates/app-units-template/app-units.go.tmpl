@@ -4,25 +4,24 @@ package internal
 import (
     {{if gt (len .Actions) 0}}"{{ .PackageName }}/internal/actions"{{end}}
     {{if gt (len .Receivers) 0}}"{{ .PackageName }}/internal/receivers"{{end}}
-	"{{ .PackageName }}/pkg/types"
 	"context"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
-func RegisterUnits(ctx context.Context, local *coattailtypes.Peer) error {
+func (a *App) LoadUnits(ctx context.Context, local *coattailtypes.Peer) error {
     var err error
 
     // Register actions
     {{ range $action := .Actions }}
-    err = local.RegisterAction(ctx, "{{ $action.Name }}", coattailtypes.NewAction[{{- if $action.InputType }}{{ $action.InputType }} {{ else }}any{{end}}, {{- if $action.OutputType }} {{ $action.OutputType }}{{else}} any{{end}}](&actions.{{ $action.Name }}{}))
+    err = local.RegisterAction(ctx, coattailtypes.NewAction(&actions.{{ $action.Name }}{}))
     if err != nil {
         return err
     }
     {{ end }}
     // Register receivers
     {{ range $receiver := .Receivers }}
-    err = local.RegisterReceiver(ctx, "{{ $receiver.Name }}", coattailtypes.NewReceiver[{{- if $receiver.InputType }}{{ $receiver.InputType }}{{ else }}any{{end}}](&receivers.{{ $receiver.Name }}{}))
+    err = local.RegisterReceiver(ctx, coattailtypes.NewReceiver(&receivers.{{ $receiver.Name }}{}))
     if err != nil {
         return err
     }

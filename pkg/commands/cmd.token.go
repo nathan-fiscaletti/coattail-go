@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/nathan-fiscaletti/coattail-go/internal/commands/token"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/commands/token"
 	"github.com/spf13/cobra"
 )
 

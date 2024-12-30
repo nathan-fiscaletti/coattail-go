@@ -3,24 +3,28 @@ package internal
 
 import (
     "github.com/nathan-fiscaletti/ct1/internal/actions"
-    
-	"github.com/nathan-fiscaletti/ct1/pkg/types"
+    "github.com/nathan-fiscaletti/ct1/internal/receivers"
 	"context"
 
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
-func RegisterUnits(ctx context.Context, local *coattailtypes.Peer) error {
+func (a *App) LoadUnits(ctx context.Context, local *coattailtypes.Peer) error {
     var err error
 
     // Register actions
     
-    err = local.RegisterAction(ctx, "Authenticate", coattailtypes.NewAction[types.Request , types.Response](&actions.Authenticate{}))
+    err = local.RegisterAction(ctx, coattailtypes.NewAction(&actions.Authenticate{}))
     if err != nil {
         return err
     }
     
     // Register receivers
+    
+    err = local.RegisterReceiver(ctx, coattailtypes.NewReceiver(&receivers.MyReceiver{}))
+    if err != nil {
+        return err
+    }
     
     return nil
 }

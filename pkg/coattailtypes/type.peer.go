@@ -80,7 +80,7 @@ type ActionManager interface {
 	// provided as the first argument. The second argument is the unit that
 	// should be executed when the action is run. The return value is an error
 	// if the action could not be added.
-	RegisterAction(ctx context.Context, name string, unit Unit) error
+	RegisterAction(ctx context.Context, unit Unit) error
 
 	// HasAction checks if an action is available on the peer. The name of the
 	// action should be provided as the first argument. The return value is
@@ -103,7 +103,7 @@ type ReceiverManager interface {
 	// provided as the first argument. The second argument is the unit that should
 	// be executed when the receiver is notified. The return value is an error if
 	// the receiver could not be added.
-	RegisterReceiver(ctx context.Context, name string, unit Unit) error
+	RegisterReceiver(ctx context.Context, unit Unit) error
 
 	// Notify notifies a receiver on the peer. The name of the receiver
 	// should be provided as the first argument. The second argument is the data

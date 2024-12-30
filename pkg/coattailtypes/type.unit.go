@@ -1,10 +1,14 @@
 package coattailtypes
 
-import "context"
+import (
+	"context"
+	"reflect"
+)
 
 // Unit is an interface that defines a unit of work that can be executed.
 type Unit interface {
 	Execute(context.Context, any) (any, error)
+	Name() string
 }
 
 // UnitHandler is a function that defines a unit of work that can be executed.
@@ -23,6 +27,10 @@ type unitFunc struct {
 
 func (u unitFunc) Execute(ctx context.Context, args any) (any, error) {
 	return u.UnitHandler(ctx, args)
+}
+
+func (u unitFunc) Name() string {
+	return reflect.TypeOf(u.UnitHandler).Name()
 }
 
 type UnitType int

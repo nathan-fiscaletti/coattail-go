@@ -7,6 +7,6 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 )
 
-func RegisterUnits(ctx context.Context, local *coattailtypes.Peer) error {
+func (a *App) LoadUnits(ctx context.Context, local *coattailtypes.Peer) error {
     return nil
 }

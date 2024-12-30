@@ -2,6 +2,7 @@ package coattailtypes
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/invopop/jsonschema"
 )
@@ -15,6 +16,7 @@ type ReceiverWithInputSchema interface {
 }
 
 type receiverUnit[A any] struct {
+	name     string
 	receiver Receiver[A]
 }
 
@@ -27,6 +29,10 @@ func (a *receiverUnit[A]) Execute(ctx context.Context, args any) (any, error) {
 
 	err := a.receiver.Execute(ctx, argument)
 	return nil, err
+}
+
+func (a *receiverUnit[A]) Name() string {
+	return a.name
 }
 
 func (a *receiverUnit[A]) InputSchema() *jsonschema.Schema {
@@ -42,7 +48,16 @@ func (a *receiverUnit[A]) OutputSchema() *jsonschema.Schema {
 }
 
 func NewReceiver[A any](receiver Receiver[A]) Unit {
+	// get name of action using reflection, considering that it might be a pointer
+	// if it is a pointer, we need to get the name of the underlying type
+	receiverType := reflect.TypeOf(receiver)
+	if receiverType.Kind() == reflect.Ptr {
+		receiverType = receiverType.Elem()
+	}
+	name := receiverType.Name()
+
 	return &receiverUnit[A]{
+		name:     name,
 		receiver: receiver,
 	}
 }

@@ -108,13 +108,13 @@ func GenerateUnits(ctx context.Context, root string, packageName string) error {
 
 	log.Printf("Generating registry\n")
 
-	registryTemplate := templates.RegistryTemplateData{
+	registryTemplate := templates.AppUnitsTemplateData{
 		Actions:     actions.Actions,
 		Receivers:   receivers.Receivers,
 		PackageName: packageName,
 	}
 
-	if err := templates.NewRegistryTemplate(registryTemplate).Fill(filepath.Join(root, "internal")); err != nil {
+	if err := templates.NewAppUnitsTemplate(registryTemplate).Fill(filepath.Join(root, "internal")); err != nil {
 		return fmt.Errorf("failed to generate registry: %w", err)
 	}
 

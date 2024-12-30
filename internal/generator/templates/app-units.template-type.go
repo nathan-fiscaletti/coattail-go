@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 )
 
-//go:embed registry-template/*
-var registryTemplates embed.FS
+//go:embed app-units-template/*
+var appUnitsTemplate embed.FS
 
-type RegistryTemplateData struct {
+type AppUnitsTemplateData struct {
 	Actions     []ActionTemplateData   `yaml:"actions"`
 	Receivers   []ReceiverTemplateData `yaml:"receivers"`
 	PackageName string                 `yaml:"package_name"`
@@ -20,19 +20,19 @@ type RegistryTemplateData struct {
 	templates *embed.FS
 }
 
-func NewRegistryTemplate(data RegistryTemplateData) Template {
-	data.templates = &registryTemplates
+func NewAppUnitsTemplate(data AppUnitsTemplateData) Template {
+	data.templates = &appUnitsTemplate
 	return &data
 }
 
-func (d *RegistryTemplateData) Fill(dir string) error {
-	modTemplateFs, err := fs.Sub(d.templates, "registry-template")
+func (d *AppUnitsTemplateData) Fill(dir string) error {
+	modTemplateFs, err := fs.Sub(d.templates, "app-units-template")
 	if err != nil {
 		return err
 	}
 
-	inputTemplate := "registry.go.tmpl"
-	filename := "registry.go"
+	inputTemplate := "app-units.go.tmpl"
+	filename := "app-units.go"
 	outputFile := filepath.Join(dir, filename)
 
 	// Create the target directory if it doesn't exist

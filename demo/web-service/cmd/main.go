@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if err := coattail.Run(&internal.WebService{}); err != nil {
+	if err := coattail.Run(&internal.App{}); err != nil {
 		panic(err)
 	}
 }

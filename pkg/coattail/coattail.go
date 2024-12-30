@@ -41,12 +41,17 @@ func Run(app coattailtypes.App) error {
 		return err
 	}
 
+	// Load the units for the Coattail instance.
+	if err := app.LoadUnits(ctx, h.LocalPeer); err != nil {
+		return err
+	}
+
+	// Start the host and notify
 	if err := h.Start(ctx, func(ctx context.Context, conn net.Conn, logPackets bool) {
 		go packets.NewHandler(ctx, conn, packets.InputRoleServer).HandlePackets(logPackets)
 	}); err != nil {
 		return err
 	}
-
 	app.OnStart(ctx, h.LocalPeer)
 
 	// Block forever
@@ -68,10 +73,12 @@ func LocalPeer(ctx context.Context) (*coattailtypes.Peer, error) {
 }
 
 func createContext(app coattailtypes.App) (context.Context, error) {
-	ctx, err := logging.ContextWithLogger(
-		context.Background(),
-		reflect.TypeOf(app).String(),
-	)
+	appName := reflect.TypeOf(app).String()
+	if named, ok := app.(coattailtypes.AppWithName); ok {
+		appName = named.Name()
+	}
+
+	ctx, err := logging.ContextWithLogger(context.Background(), appName)
 	if err != nil {
 		return nil, err
 	}

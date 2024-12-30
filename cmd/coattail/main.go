@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nathan-fiscaletti/coattail-go/internal/commands"
+	"github.com/nathan-fiscaletti/coattail-go/pkg/commands"
 	"github.com/spf13/cobra"
 )
 

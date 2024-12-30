@@ -2,13 +2,13 @@ package receivers
 
 import (
     "context"
-{{ if .InputType }}
+{{- if .InputType }}
     "{{ .PackageName }}/pkg/types"
-{{ end }}
+{{- end }}
 )
 
 type {{ .Name }} struct {}
 
-func (a *{{ .Name }}) Execute(ctx context.Context, {{- if .InputType }}arg *{{ .InputType }}{{ else }}_ *any {{- end }}) error {
+func (a *{{ .Name }}) Execute(ctx context.Context, {{if .InputType }}arg *{{ .InputType }}{{ else }}_ *any{{ end }}) error {
 	return nil
 }

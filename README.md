@@ -50,7 +50,6 @@ Coattail is a powerful framework designed to orchestrate workflows, automate tas
   - [Accessing the Local Peer](#accessing-the-local-peer)
 - [Next Steps](#next-steps)
   - [Coattail Rest API](#coattail-rest-api)
-  - [Coattail Web UI](#coattail-web-ui)
   - [Coattail CLI](#coattail-cli)
 
 ## Installing Coattail
@@ -153,13 +152,14 @@ type Response struct {
 
 ### Actions
 
-Actions are used to perform tasks or operations on the host system. They can be executed from any number of callers.
+Actions are used to perform tasks or operations on the host system. 
 
-These callers include
+**Callers of an Action include**
+
   - Peering Coattail instances, either: 
-  - Through the SDK provided by the hosting Coattail instance using a secure TCP connection
-  - Directly over a secure TCP connection without the aid of the SDK
-  - Through the Web UI, REST API or CLI (if applicable)
+      - Through the SDK provided by the hosting Coattail instance using a secure TCP connection, or:
+      - Directly over a secure TCP connection without the aid of the SDK
+  - And through the REST API or CLI (if applicable)
 
 **Attributes of an Action include**
 
@@ -209,12 +209,12 @@ To create an action:
    }
    ```
 
-4. Your `registry.go` file will also automatically be updated to register the action with the hosting Coattail instance.
+4. Your `app-units.go` file will also automatically be updated to register the action with the hosting Coattail instance.
 
    ```go
    . . .
    
-   err = local.RegisterAction(ctx, "MyAction", coattailtypes.NewAction[types.Request , types.Response](&actions.MyAction{}))
+   err = local.RegisterAction(ctx, coattailtypes.NewAction(&actions.MyAction{}))
    if err != nil {
        return err
    }
@@ -269,9 +269,9 @@ Actions can be executed in several ways:
    response, _ := responseAny.(types.Response)
    ```
 
-3. **Through the Web UI, REST API or CLI (if applicable)**
+3. **Through the REST API or CLI (if applicable)**
 
-   - [TODO: API, CLI, Web UI](#)
+   - [TODO: API, CLI](#)
 
 ### Receivers
 
@@ -319,12 +319,12 @@ To create a receiver:
    }
    ```
 
-4. Your `registry.go` file will also automatically be updated to register the receiver with the hosting Coattail instance.
+4. Your `app-units.go` file will also automatically be updated to register the receiver with the hosting Coattail instance.
 
    ```go
    . . .
 
-   err = local.RegisterReceiver(ctx, "MyReceiver", coattailtypes.NewReceiver[types.Response](&receivers.MyReceiver{}))
+   err = local.RegisterReceiver(ctx, coattailtypes.NewReceiver(&receivers.MyReceiver{}))
    if err != nil {
        return err
    }
@@ -363,10 +363,6 @@ local, _ := coattail.LocalPeer(ctx)
 ### Coattail Rest API
 
 - [TODO: Coattail Rest API](#)
-
-### Coattail Web UI
-
-- [TODO: Coattail Web UI](#)
 
 ### Coattail CLI
 

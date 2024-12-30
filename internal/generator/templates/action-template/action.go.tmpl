@@ -2,13 +2,14 @@ package actions
 
 import (
     "context"
-{{ if or .InputType .OutputType }}
+{{- if or .InputType .OutputType }}
     "{{ .PackageName }}/pkg/types"
-{{ end }}
+{{- end }}
 )
+
 type {{ .Name }} struct {}
 
-func (a *{{ .Name }}) Execute(ctx context.Context, {{- if .InputType }}arg *{{ .InputType }}{{ else }}_ *any {{- end }}) {{- if .OutputType }} ({{ .OutputType }}, error){{ else }} (any, error){{ end }} {
+func (a *{{ .Name }}) Execute(ctx context.Context, {{ if .InputType }}arg *{{ .InputType }}{{ else }}_ *any{{ end }}) {{if .OutputType }}({{ .OutputType }}, error){{ else }}(any, error){{ end }} {
 	{{- if .OutputType }}
 	return {{ .OutputType }}{}, nil
 	{{- else }}

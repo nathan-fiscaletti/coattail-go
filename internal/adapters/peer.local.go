@@ -2,10 +2,12 @@ package adapters
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/nathan-fiscaletti/coattail-go/internal/database"
 	"github.com/nathan-fiscaletti/coattail-go/internal/host"
@@ -15,6 +17,10 @@ import (
 	"github.com/nathan-fiscaletti/coattail-go/pkg/coattailtypes"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
+)
+
+var (
+	ErrUnitTypeNameEmpty = errors.New("unit type name is empty")
 )
 
 /* ====== Local Peer Initialization ====== */
@@ -189,7 +195,9 @@ func (i *LocalPeerAdapter) HasAction(ctx context.Context, name string) (bool, er
 	}), nil
 }
 
-func (i *LocalPeerAdapter) RegisterAction(ctx context.Context, name string, unit coattailtypes.Unit) error {
+func (i *LocalPeerAdapter) RegisterAction(ctx context.Context, unit coattailtypes.Unit) error {
+	name := unit.Name()
+
 	if exists, _ := i.HasAction(ctx, name); exists {
 		return fmt.Errorf("action %s already exists", name)
 	}
@@ -223,7 +231,9 @@ func (i *LocalPeerAdapter) HasReceiver(ctx context.Context, name string) (bool, 
 	}), nil
 }
 
-func (i *LocalPeerAdapter) RegisterReceiver(ctx context.Context, name string, unit coattailtypes.Unit) error {
+func (i *LocalPeerAdapter) RegisterReceiver(ctx context.Context, unit coattailtypes.Unit) error {
+	name := reflect.TypeOf(unit).Name()
+
 	if exists, _ := i.HasReceiver(ctx, name); exists {
 		return fmt.Errorf("receiver %s already exists", name)
 	}
